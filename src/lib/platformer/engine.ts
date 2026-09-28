@@ -171,7 +171,7 @@ function mulberry32(a: number) {
 
 /* ---------------- Level building ---------------- */
 
-function buildLevel(world: number): Level {
+export function buildLevel(world: number): Level {
   const rng = mulberry32(1337 + world * 977);
   const cols = 230 + world * 35;
   const grid = new Uint8Array(cols * ROWS);
