@@ -145,6 +145,12 @@
 
   body {
     background-color: var(--color-background);
+    background-image:
+      radial-gradient(circle at 15% 0%, color-mix(in oklab, var(--accent) 16%, transparent), transparent 55%),
+      radial-gradient(circle at 85% 100%, color-mix(in oklab, var(--primary) 16%, transparent), transparent 55%);
+    background-attachment: fixed;
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+
   }
 }
