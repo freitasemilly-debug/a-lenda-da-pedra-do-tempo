@@ -57,6 +57,7 @@ interface Mover {
   t: number;
   px: number;
   py: number;
+  vert?: boolean;
 }
 
 interface Pickup {
@@ -170,7 +171,7 @@ function mulberry32(a: number) {
 
 /* ---------------- Level building ---------------- */
 
-function buildLevel(world: number): Level {
+export function buildLevel(world: number): Level {
   const rng = mulberry32(1337 + world * 977);
   const cols = 230 + world * 35;
   const grid = new Uint8Array(cols * ROWS);
@@ -237,8 +238,8 @@ function buildLevel(world: number): Level {
     if (roll < 0.16) {
       // vão com plataforma flutuante
       const gap = 3 + Math.floor(rng() * (2 + world));
-      plat(x + 1, gap - 1, top - 3);
-      for (let i = 1; i < gap - 1; i++) addCoin(x + i, top - 5);
+      plat(x + 1, gap - 1, top - 2);
+      for (let i = 1; i < gap - 1; i++) addCoin(x + i, top - 4);
       x += gap;
       fillGround(x, x + 6, top);
       x += 6;
@@ -258,12 +259,17 @@ function buildLevel(world: number): Level {
     } else if (roll < 0.42) {
       // plataformas flutuantes em alturas variadas
       let px = x;
+      let prevH = 0;
       for (let i = 0; i < 3; i++) {
-        const py = top - 3 - Math.floor(rng() * 4);
+        // altura relativa ao chão: 1..3 blocos, subindo no máximo 2 por salto
+        const maxH = Math.min(3, prevH + 2);
+        const h = 1 + Math.floor(rng() * maxH);
+        prevH = h;
+        const py = top - h;
         plat(px, 3, py);
         addCoin(px + 1, py - 2);
         if (rng() < 0.35) addEnemy(px + 1, py, "walker");
-        px += 5;
+        px += 4 + (world >= 3 && rng() < 0.5 ? 1 : 0);
       }
       x = px;
       fillGround(x, x + 7, top);
@@ -274,18 +280,20 @@ function buildLevel(world: number): Level {
       const vertical = rng() < 0.4;
       movers.push({
         x: (x + 1) * TILE,
-        y: (top - 3) * TILE,
+        y: (top - 2) * TILE,
         w: TILE * 3,
         h: 16,
-        ax: (x + 1) * TILE,
-        ay: (top - 3) * TILE,
-        range: vertical ? TILE * 3 : (gap - 4) * TILE,
+        ax: vertical ? (x + Math.floor((gap - 3) / 2)) * TILE : (x + 1) * TILE,
+        ay: (top - 2) * TILE,
+        range: vertical ? TILE * 1.2 : Math.max(1, (gap - 4) / 2) * TILE,
+        vert: vertical,
         speed: 0.9 + world * 0.15,
         t: rng() * 6,
         px: 0,
         py: 0,
       });
-      for (let i = 1; i < gap; i += 2) addCoin(x + i, top - 6);
+      if (!vertical) movers[movers.length - 1]!.ax = (x + 1) * TILE + Math.max(1, (gap - 4) / 2) * TILE;
+      for (let i = 1; i < gap; i += 2) addCoin(x + i, top - 5);
       x += gap;
       fillGround(x, x + 6, top);
       x += 6;
@@ -294,17 +302,17 @@ function buildLevel(world: number): Level {
       fillGround(x, x + 10, top);
       const sx = x + 3;
       spikes.push({ x: sx * TILE, y: (top - 1) * TILE + 16, w: TILE * 2 });
-      bricks(sx - 1, 4, top - 4);
-      for (let i = 0; i < 4; i++) addCoin(sx - 1 + i, top - 6);
+      bricks(sx - 1, 4, top - 3);
+      for (let i = 0; i < 4; i++) addCoin(sx - 1 + i, top - 5);
       x += 10;
     } else if (roll < 0.74) {
       // área secreta alta com fragmento
       fillGround(x, x + 12, top);
-      plat(x + 3, 4, top - 4);
-      plat(x + 6, 3, top - 7);
-      addFrag(x + 7, top - 9);
-      addCoin(x + 4, top - 6);
-      addCoin(x + 5, top - 6);
+      plat(x + 2, 4, top - 2);
+      plat(x + 6, 3, top - 4);
+      addFrag(x + 7, top - 6);
+      addCoin(x + 3, top - 4);
+      addCoin(x + 4, top - 4);
       if (rng() < 0.6) addEnemy(x + 9, top, "chaser");
       x += 12;
     } else if (roll < 0.85) {
@@ -320,8 +328,8 @@ function buildLevel(world: number): Level {
       const drop = 1 + Math.floor(rng() * 3);
       top = Math.min(13, top + drop);
       fillGround(x, x + 10, top);
-      bricks(x + 4, 3, top - 4);
-      addCoin(x + 5, top - 6);
+      bricks(x + 4, 3, top - 3);
+      addCoin(x + 5, top - 5);
       if (rng() < 0.5) addEnemy(x + 7, top, "walker");
       x += 10;
     }
@@ -333,7 +341,10 @@ function buildLevel(world: number): Level {
   // Fragmento garantido por fase (3 no total por fase)
   while (fragments.length < 3) {
     const fx = 30 + Math.floor(rng() * (cols - 70));
-    addFrag(fx, 4 + Math.floor(rng() * 3));
+    let gy = -1;
+    for (let y = 0; y < ROWS; y++) if (grid[y * cols + fx]) { gy = y; break; }
+    if (gy < 4 || grid[(gy - 1) * cols + fx] || grid[(gy - 2) * cols + fx]) continue;
+    addFrag(fx, gy - 2);
   }
 
   let boss: Boss | null = null;
@@ -798,7 +809,7 @@ export class Game {
           // horizontal se range grande, vertical se pequeno
         }
       }
-      const vertical = m.range <= TILE * 3;
+      const vertical = m.vert ?? m.range <= TILE * 3;
       if (vertical) m.y = m.ay + osc * m.range;
       else m.x = m.ax + osc * m.range;
       m.px = m.x - prevX;
