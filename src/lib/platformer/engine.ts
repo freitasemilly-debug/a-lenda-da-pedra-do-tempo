@@ -226,7 +226,7 @@ function buildLevel(world: number): Level {
 
   while (x < cols - endReserve) {
     const roll = rng();
-    if (cpIndex < cpMarks.length && x > cpMarks[cpIndex]) {
+    if (cpIndex < cpMarks.length && x > cpMarks[cpIndex]!) {
       fillGround(x, x + 8, top);
       checkpoints.push({ x: (x + 3) * TILE, y: (top - 2) * TILE, on: false });
       x += 8;
@@ -1010,8 +1010,8 @@ export class Game {
     const cam = Math.round(this.cam);
 
     const sky = g.createLinearGradient(0, 0, 0, VH);
-    sky.addColorStop(0, W.sky[0]);
-    sky.addColorStop(1, W.sky[1]);
+    sky.addColorStop(0, W.sky[0]!);
+    sky.addColorStop(1, W.sky[1]!);
     g.fillStyle = sky;
     g.fillRect(0, 0, VW, VH);
 
