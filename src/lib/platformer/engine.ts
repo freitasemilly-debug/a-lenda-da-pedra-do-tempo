@@ -439,11 +439,11 @@ class Sfx {
       [294, 349, 392, 466, 523, 466, 392, 349],
       [220, 262, 294, 349, 392, 349, 294, 262],
     ];
-    const melody = scales[(world - 1) % 3];
+    const melody = scales[(world - 1) % 3]!;
     this.step = 0;
     this.musicTimer = window.setInterval(() => {
       if (this.muted) return;
-      const n = melody[this.step % melody.length];
+      const n = melody[this.step % melody.length]!;
       this.blip(n, 0.14, "triangle", 0.04);
       if (this.step % 2 === 0) this.blip(n / 2, 0.16, "square", 0.025);
       this.step++;
@@ -465,7 +465,11 @@ export class Game {
   private raf = 0;
   private acc = 0;
   private last = 0;
-  private keys: Record<string, boolean> = {};
+  private keys: { left: boolean; right: boolean; jump: boolean } = {
+    left: false,
+    right: false,
+    jump: false,
+  };
   private sfx = new Sfx();
 
   private level!: Level;
@@ -566,7 +570,7 @@ export class Game {
       fragments: this.fragsGot,
       fragmentsTotal: this.level.fragments.length,
       world: this.world,
-      worldName: WORLDS[this.world - 1].name,
+      worldName: WORLDS[this.world - 1]!.name,
       status: this.status,
       bossHp: this.level.boss ? this.level.boss.hp : 0,
       bossMax: 3,
@@ -985,7 +989,7 @@ export class Game {
 
     // partículas
     for (let i = this.particles.length - 1; i >= 0; i--) {
-      const q = this.particles[i];
+      const q = this.particles[i]!;
       q.x += q.vx;
       q.y += q.vy;
       q.vy += 0.18;
@@ -1002,7 +1006,7 @@ export class Game {
 
   private render() {
     const g = this.ctx;
-    const W = WORLDS[this.world - 1];
+    const W = WORLDS[this.world - 1]!;
     const cam = Math.round(this.cam);
 
     const sky = g.createLinearGradient(0, 0, 0, VH);
@@ -1355,7 +1359,7 @@ export class Game {
     const running = Math.abs(p.vx) > 0.4 && p.onGround;
     const step = running ? Math.floor(p.anim * 3) % 4 : 0;
     const air = !p.onGround;
-    const legA = running ? [0, 3, 0, -3][step] : 0;
+    const legA = running ? [0, 3, 0, -3][step]! : 0;
     const f = p.face;
 
     // sombra
@@ -1388,7 +1392,7 @@ export class Game {
 
     // braços
     g.fillStyle = "#38c46f";
-    const armY = air ? y + 12 : y + 16 + (running ? [0, -2, 0, 2][step] : 0);
+    const armY = air ? y + 12 : y + 16 + (running ? [0, -2, 0, 2][step]! : 0);
     g.fillRect(f > 0 ? x + 20 : x - 2, armY, 5, 10);
     g.fillStyle = "#f0c08a";
     g.fillRect(f > 0 ? x + 20 : x - 2, armY + 9, 5, 4);
