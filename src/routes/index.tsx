@@ -4,13 +4,13 @@ import { GameScreen } from "@/components/GameScreen";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Léo e a Pedra do Tempo — jogo de plataforma 2D" },
+      { title: "A Lenda da Pedra do Tempo — jogo de plataforma 2D" },
       {
         name: "description",
         content:
           "Jogo de plataforma 2D em pixel art: corra, pule, colete moedas e fragmentos da Pedra do Tempo em três mundos e enfrente o Guardião do Tempo.",
       },
-      { property: "og:title", content: "Léo e a Pedra do Tempo" },
+      { property: "og:title", content: "A Lenda da Pedra do Tempo" },
       {
         property: "og:description",
         content:
@@ -28,10 +28,10 @@ function Index() {
     <main className="min-h-screen bg-background px-4 py-6">
       <header className="mx-auto mb-5 w-full max-w-[1000px] text-center">
         <h1 className="font-pixel text-base leading-relaxed text-foreground sm:text-xl">
-          Léo <span className="text-accent">e a</span> Pedra do Tempo
+          A Lenda <span className="text-accent">da</span> Pedra do Tempo
         </h1>
         <p className="mt-2 text-xs text-muted-foreground sm:text-sm">
-          Plataforma 2D clássica · três mundos · fragmentos escondidos · chefão final
+          Jogue como Léo ou Luna · três mundos · fragmentos escondidos · chefão final
         </p>
       </header>
 

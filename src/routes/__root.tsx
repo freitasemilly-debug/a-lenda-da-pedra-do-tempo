@@ -77,13 +77,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Léo e a Pedra do Tempo" },
+      { title: "A Lenda da Pedra do Tempo" },
       {
         name: "description",
         content: "Jogo de plataforma 2D em pixel art com três mundos e chefão final.",
       },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Léo e a Pedra do Tempo" },
+      { property: "og:title", content: "A Lenda da Pedra do Tempo" },
       {
         property: "og:description",
         content: "Jogo de plataforma 2D em pixel art com três mundos e chefão final.",
@@ -115,7 +115,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>

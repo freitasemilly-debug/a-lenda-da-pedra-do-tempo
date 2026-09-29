@@ -1,4 +1,4 @@
-/* Léo e a Pedra do Tempo — motor de plataforma 2D original (canvas, pixel art procedural) */
+/* A Lenda da Pedra do Tempo — motor de plataforma 2D original (canvas, pixel art procedural) */
 
 export const TILE = 32;
 export const VW = 960;
@@ -122,7 +122,7 @@ interface Level {
 
 export const WORLDS = [
   {
-    name: "Bosque das Horas",
+    name: "Floresta Antiga",
     sky: ["#7fd7f0", "#c9f2d6"],
     far: "#5f9e8f",
     near: "#3d7a63",
@@ -134,7 +134,7 @@ export const WORLDS = [
     tree: "#2c6e4a",
   },
   {
-    name: "Dunas do Crepúsculo",
+    name: "Caverna de Cristal",
     sky: ["#f5a45c", "#f7dba0"],
     far: "#b9724f",
     near: "#8a4a3a",
@@ -146,7 +146,7 @@ export const WORLDS = [
     tree: "#7a5233",
   },
   {
-    name: "Fortaleza do Tempo",
+    name: "Castelo do Tempo",
     sky: ["#2b2350", "#5a3d87"],
     far: "#3c3068",
     near: "#241d44",
@@ -513,6 +513,7 @@ export class Game {
     hurt: 0,
   };
   private respawn: Vec = { x: 0, y: 0 };
+  private character: Hero = "leo";
 
   constructor(canvas: HTMLCanvasElement, onState: (s: GameState) => void) {
     this.canvas = canvas;
@@ -558,6 +559,13 @@ export class Game {
       this.sfx.startMusic(this.world);
       this.emit();
     }
+  }
+
+  /** Nova partida com o personagem escolhido (mesma física para ambos). */
+  newGame(hero: Hero) {
+    this.character = hero;
+    this.sfx.ensure();
+    this.restart();
   }
 
   restart() {
@@ -618,11 +626,6 @@ export class Game {
       this.p.buffer = 8;
       e.preventDefault();
     }
-    if (k === "enter") {
-      if (this.status === "ready") this.beginPlay();
-      else if (this.status === "gameover" || this.status === "win") this.restart();
-    }
-    if (this.status === "ready" && ["arrowleft", "arrowright", "a", "d", " "].includes(k)) this.beginPlay();
   };
 
   private onKeyUp = (e: KeyboardEvent) => {
@@ -1357,84 +1360,22 @@ export class Game {
   }
 
   private drawPlayer(cam: number) {
-    const g = this.ctx;
     const p = this.p;
-    if (p.inv > 0 && Math.floor(this.frame / 4) % 2 === 0 && p.hurt === 0 && this.status === "playing") {
-      // piscar levemente mas ainda desenhar sombra
-    }
     const blink = p.inv > 0 && Math.floor(this.frame / 3) % 2 === 0;
-    const x = Math.round(p.x - cam);
-    const y = Math.round(p.y);
-    g.globalAlpha = blink ? 0.45 : 1;
-
-    const running = Math.abs(p.vx) > 0.4 && p.onGround;
-    const step = running ? Math.floor(p.anim * 3) % 4 : 0;
-    const air = !p.onGround;
-    const legA = running ? [0, 3, 0, -3][step]! : 0;
-    const f = p.face;
-
-    // sombra
-    g.fillStyle = "rgba(0,0,0,0.18)";
-    g.fillRect(x + 2, y + p.h - 2, 20, 4);
-
-    // pernas
-    g.fillStyle = "#2f4f9e";
-    if (air) {
-      g.fillRect(x + 3, y + 26, 8, 8);
-      g.fillRect(x + 13, y + 24, 8, 8);
-    } else {
-      g.fillRect(x + 3 + legA, y + 26, 8, 8);
-      g.fillRect(x + 13 - legA, y + 26, 8, 8);
-    }
-    g.fillStyle = "#c4522c";
-    g.fillRect(x + 2 + legA, y + 32, 10, 3);
-    g.fillRect(x + 12 - legA, y + 32, 10, 3);
-
-    // corpo / túnica
-    g.fillStyle = p.hurt > 0 ? "#ff9b9b" : "#38c46f";
-    g.fillRect(x + 2, y + 14, 20, 13);
-    g.fillStyle = "#26a057";
-    g.fillRect(x + 2, y + 23, 20, 4);
-    // cinto com pedra
-    g.fillStyle = "#6b4426";
-    g.fillRect(x + 2, y + 21, 20, 3);
-    g.fillStyle = "#37d7f5";
-    g.fillRect(x + 10, y + 20, 5, 5);
-
-    // braços
-    g.fillStyle = "#38c46f";
-    const armY = air ? y + 12 : y + 16 + (running ? [0, -2, 0, 2][step]! : 0);
-    g.fillRect(f > 0 ? x + 20 : x - 2, armY, 5, 10);
-    g.fillStyle = "#f0c08a";
-    g.fillRect(f > 0 ? x + 20 : x - 2, armY + 9, 5, 4);
-
-    // cabeça
-    g.fillStyle = "#f6cf9c";
-    g.fillRect(x + 3, y + 2, 18, 13);
-    // cabelo
-    g.fillStyle = "#3a2a18";
-    g.fillRect(x + 2, y, 20, 5);
-    g.fillRect(f > 0 ? x + 2 : x + 17, y + 2, 5, 6);
-    // olhos
-    g.fillStyle = "#1f1a14";
-    if (p.hurt > 0) {
-      g.fillRect(x + (f > 0 ? 12 : 6), y + 7, 5, 2);
-      g.fillRect(x + (f > 0 ? 6 : 12), y + 7, 3, 2);
-    } else {
-      g.fillRect(x + (f > 0 ? 13 : 5), y + 6, 3, 4);
-      g.fillRect(x + (f > 0 ? 8 : 10), y + 6, 2, 4);
-    }
-    // cachecol
-    g.fillStyle = "#ff5f8d";
-    g.fillRect(x + 2, y + 13, 20, 4);
-    const scarf = Math.sin(this.frame * 0.25) * 2;
-    g.fillRect(f > 0 ? x - 6 : x + 20, y + 13 + scarf, 8, 4);
-
+    this.ctx.globalAlpha = blink ? 0.45 : 1;
+    paintHero(this.ctx, Math.round(p.x - cam), Math.round(p.y), this.character, {
+      running: Math.abs(p.vx) > 0.4 && p.onGround,
+      anim: p.anim,
+      air: !p.onGround,
+      face: p.face,
+      hurt: p.hurt > 0,
+      frame: this.frame,
+    });
     if (p.stomp > 0) {
-      g.fillStyle = "rgba(255,255,255,0.5)";
-      g.fillRect(x - 8, y + p.h - 4, 40, 3);
+      this.ctx.fillStyle = "rgba(255,255,255,0.5)";
+      this.ctx.fillRect(Math.round(p.x - cam) - 8, Math.round(p.y) + p.h - 4, 40, 3);
     }
-    g.globalAlpha = 1;
+    this.ctx.globalAlpha = 1;
   }
 
   private drawParticles(cam: number) {
@@ -1445,5 +1386,85 @@ export class Game {
       g.fillRect(q.x - cam, q.y, q.s, q.s);
     }
     g.globalAlpha = 1;
+  }
+}
+
+export type Hero = "leo" | "luna";
+
+const HERO_PAL = {
+  leo: { tunic: "#38c46f", tunicDark: "#26a057", legs: "#2f4f9e", boots: "#c4522c", hair: "#3a2a18", scarf: "#ff5f8d", skin: "#f6cf9c", hand: "#f0c08a" },
+  luna: { tunic: "#9b6bff", tunicDark: "#7445e0", legs: "#3a3470", boots: "#e0a23a", hair: "#c2462f", scarf: "#37d7f5", skin: "#f3c79a", hand: "#e8b686" },
+};
+
+export interface HeroPose {
+  running: boolean;
+  anim: number;
+  air: boolean;
+  face: number;
+  hurt: boolean;
+  frame: number;
+}
+
+/** Desenha Léo ou Luna (24x34). Só a aparência muda entre os dois. */
+export function paintHero(g: CanvasRenderingContext2D, x: number, y: number, hero: Hero, o: HeroPose) {
+  const c = HERO_PAL[hero];
+  const step = o.running ? Math.floor(o.anim * 3) % 4 : 0;
+  const legA = o.running ? [0, 3, 0, -3][step]! : 0;
+  const f = o.face;
+  g.fillStyle = "rgba(0,0,0,0.18)";
+  g.fillRect(x + 2, y + 32, 20, 4);
+  // cabelo longo da Luna (atrás)
+  if (hero === "luna") {
+    g.fillStyle = c.hair;
+    const sway = Math.sin(o.frame * 0.2) * 2;
+    g.fillRect(f > 0 ? x - 4 : x + 20, y + 3 + sway, 8, 16);
+  }
+  g.fillStyle = c.legs;
+  if (o.air) {
+    g.fillRect(x + 3, y + 26, 8, 8);
+    g.fillRect(x + 13, y + 24, 8, 8);
+  } else {
+    g.fillRect(x + 3 + legA, y + 26, 8, 8);
+    g.fillRect(x + 13 - legA, y + 26, 8, 8);
+  }
+  g.fillStyle = c.boots;
+  g.fillRect(x + 2 + legA, y + 32, 10, 3);
+  g.fillRect(x + 12 - legA, y + 32, 10, 3);
+  g.fillStyle = o.hurt ? "#ff9b9b" : c.tunic;
+  g.fillRect(x + 2, y + 14, 20, 13);
+  g.fillStyle = c.tunicDark;
+  if (hero === "luna") g.fillRect(x, y + 23, 24, 5);
+  else g.fillRect(x + 2, y + 23, 20, 4);
+  g.fillStyle = "#6b4426";
+  g.fillRect(x + 2, y + 21, 20, 3);
+  g.fillStyle = "#37d7f5";
+  g.fillRect(x + 10, y + 20, 5, 5);
+  g.fillStyle = c.tunic;
+  const armY = o.air ? y + 12 : y + 16 + (o.running ? [0, -2, 0, 2][step]! : 0);
+  g.fillRect(f > 0 ? x + 20 : x - 2, armY, 5, 10);
+  g.fillStyle = c.hand;
+  g.fillRect(f > 0 ? x + 20 : x - 2, armY + 9, 5, 4);
+  g.fillStyle = c.skin;
+  g.fillRect(x + 3, y + 2, 18, 13);
+  g.fillStyle = c.hair;
+  g.fillRect(x + 2, y, 20, 5);
+  g.fillRect(f > 0 ? x + 2 : x + 17, y + 2, 5, 6);
+  if (hero === "luna") {
+    g.fillStyle = "#ffd84a";
+    g.fillRect(f > 0 ? x + 4 : x + 15, y - 2, 5, 3);
+  }
+  g.fillStyle = "#1f1a14";
+  if (o.hurt) {
+    g.fillRect(x + (f > 0 ? 12 : 6), y + 7, 5, 2);
+    g.fillRect(x + (f > 0 ? 6 : 12), y + 7, 3, 2);
+  } else {
+    g.fillRect(x + (f > 0 ? 13 : 5), y + 6, 3, 4);
+    g.fillRect(x + (f > 0 ? 8 : 10), y + 6, 2, 4);
+  }
+  g.fillStyle = c.scarf;
+  g.fillRect(x + 2, y + 13, 20, 4);
+  if (hero === "leo") {
+    const scarf = Math.sin(o.frame * 0.25) * 2;
+    g.fillRect(f > 0 ? x - 6 : x + 20, y + 13 + scarf, 8, 4);
   }
 }

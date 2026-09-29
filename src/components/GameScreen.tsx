@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Game, VH, VW, type GameState } from "@/lib/platformer/engine";
+import { Game, VH, VW, paintHero, type GameState, type Hero } from "@/lib/platformer/engine";
 
 const initial: GameState = {
   score: 0,
@@ -8,7 +8,7 @@ const initial: GameState = {
   fragments: 0,
   fragmentsTotal: 3,
   world: 1,
-  worldName: "Bosque das Horas",
+  worldName: "Floresta Antiga",
   status: "ready",
   bossHp: 0,
   bossMax: 3,
@@ -20,6 +20,18 @@ export function GameScreen() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gameRef = useRef<Game | null>(null);
   const [state, setState] = useState<GameState>(initial);
+  const [choosing, setChoosing] = useState(false);
+  const [hero, setHero] = useState<Hero | null>(null);
+
+  const openSelect = () => {
+    setHero(null);
+    setChoosing(true);
+  };
+  const play = () => {
+    if (!hero) return;
+    setChoosing(false);
+    gameRef.current?.newGame(hero);
+  };
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -37,7 +49,6 @@ export function GameScreen() {
       onPointerDown: (e: React.PointerEvent) => {
         e.preventDefault();
         (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-        gameRef.current?.beginPlay();
         gameRef.current?.setInput(key, true);
       },
       onPointerUp: (e: React.PointerEvent) => {
@@ -49,8 +60,11 @@ export function GameScreen() {
     };
   }, []);
 
-  const overlay =
-    state.status === "ready" || state.status === "gameover" || state.status === "win" ? state.status : null;
+  const overlay = choosing
+    ? "select"
+    : state.status === "ready" || state.status === "gameover" || state.status === "win"
+      ? state.status
+      : null;
 
   return (
     <div className="mx-auto w-full max-w-[1000px]">
@@ -122,15 +136,15 @@ export function GameScreen() {
             {overlay === "ready" && (
               <>
                 <h2 className="font-pixel text-xl leading-relaxed text-foreground sm:text-2xl">
-                  Léo e a Pedra do Tempo
+                  A Lenda da Pedra do Tempo
                 </h2>
                 <p className="max-w-md text-sm text-muted-foreground">
-                  Corra, pule sobre os inimigos, junte moedas e recupere os fragmentos da Pedra do Tempo em três
-                  mundos. No final, enfrente o Guardião do Tempo.
+                  Uma antiga Pedra do Tempo foi quebrada e seus fragmentos foram espalhados por diferentes mundos.
+                  Léo e Luna partiram para recuperá-los. Escolha com quem você quer viver essa aventura!
                 </p>
                 <button
                   type="button"
-                  onClick={() => gameRef.current?.beginPlay()}
+                  onClick={openSelect}
                   className="rounded-xl border-4 border-border bg-primary px-6 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95"
                 >
                   Começar
@@ -138,6 +152,26 @@ export function GameScreen() {
                 <p className="font-pixel text-[9px] uppercase tracking-widest text-muted-foreground">
                   ← → mover · espaço pular
                 </p>
+              </>
+            )}
+            {overlay === "select" && (
+              <>
+                <h2 className="font-pixel text-base leading-relaxed text-foreground sm:text-xl">
+                  Escolha seu personagem
+                </h2>
+                <div className="flex gap-4 sm:gap-8">
+                  <HeroCard id="leo" name="Léo" desc="Menino aventureiro" selected={hero === "leo"} onPick={setHero} />
+                  <HeroCard id="luna" name="Luna" desc="Menina aventureira" selected={hero === "luna"} onPick={setHero} />
+                </div>
+                {hero && (
+                  <button
+                    type="button"
+                    onClick={play}
+                    className="rounded-xl border-4 border-border bg-primary px-8 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95"
+                  >
+                    Jogar
+                  </button>
+                )}
               </>
             )}
             {overlay === "gameover" && (
@@ -148,7 +182,7 @@ export function GameScreen() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => gameRef.current?.restart()}
+                  onClick={openSelect}
                   className="rounded-xl border-4 border-border bg-primary px-6 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95"
                 >
                   Tentar de novo
@@ -161,12 +195,12 @@ export function GameScreen() {
                   A Pedra do Tempo foi restaurada!
                 </h2>
                 <p className="max-w-md text-sm text-muted-foreground">
-                  Léo derrotou o Guardião do Tempo e devolveu o fluxo das horas aos três mundos.
+                  Você derrotou o Guardião do Tempo e devolveu o fluxo das horas aos três mundos.
                 </p>
                 <p className="font-pixel text-xs text-foreground">Pontuação: {state.score}</p>
                 <button
                   type="button"
-                  onClick={() => gameRef.current?.restart()}
+                  onClick={openSelect}
                   className="rounded-xl border-4 border-border bg-primary px-6 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95"
                 >
                   Jogar novamente
@@ -232,6 +266,61 @@ function TouchBtn({
       style={{ touchAction: "none" }}
     >
       {children}
+    </button>
+  );
+}
+
+function HeroCard({
+  id,
+  name,
+  desc,
+  selected,
+  onPick,
+}: {
+  id: Hero;
+  name: string;
+  desc: string;
+  selected: boolean;
+  onPick: (h: Hero) => void;
+}) {
+  const ref = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const cv = ref.current;
+    const g = cv?.getContext("2d");
+    if (!cv || !g) return;
+    let raf = 0;
+    let frame = 0;
+    const tick = () => {
+      frame++;
+      g.clearRect(0, 0, cv.width, cv.height);
+      g.save();
+      g.scale(3, 3);
+      paintHero(g, 8, 6, id, {
+        running: selected,
+        anim: frame * 0.08,
+        air: false,
+        face: 1,
+        hurt: false,
+        frame,
+      });
+      g.restore();
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => cancelAnimationFrame(raf);
+  }, [id, selected]);
+  return (
+    <button
+      type="button"
+      onClick={() => onPick(id)}
+      aria-pressed={selected}
+      className={`flex flex-col items-center gap-2 rounded-2xl border-4 bg-card px-4 py-3 transition-transform sm:px-6 ${
+        selected ? "scale-105 border-primary shadow-[var(--shadow-panel)]" : "border-border opacity-80 hover:opacity-100"
+      }`}
+    >
+      <canvas ref={ref} width={120} height={126} className="h-[84px] w-[80px] [image-rendering:pixelated] sm:h-[126px] sm:w-[120px]" />
+      <span className="font-pixel text-xs uppercase text-foreground">{name}</span>
+      <span className="text-[11px] text-muted-foreground">{desc}</span>
     </button>
   );
 }
