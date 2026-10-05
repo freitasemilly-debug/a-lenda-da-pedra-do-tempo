@@ -373,7 +373,7 @@ export function buildLevel(world: number): Level {
     fillGround(x, cols, top);
     for (let y = 0; y < top; y++) set(cols - 1, y, BRICK);
     boss = {
-      x: (x + 22) * TILE,
+      x: (cols - 14) * TILE,
       y: (top - 4) * TILE,
       w: 76,
       h: 96,
@@ -390,7 +390,7 @@ export function buildLevel(world: number): Level {
       atk: 0,
       dying: 0,
     };
-    goalX = (x + 26) * TILE;
+    goalX = (cols - 4) * TILE;
     goalY = (top - 5) * TILE;
   } else {
     fillGround(x, cols, top);
@@ -1095,7 +1095,7 @@ export class Game {
       b.vy = 0;
     }
     const arenaL = (this.level.cols - 36) * TILE;
-    const arenaR = (this.level.cols - 2) * TILE - b.w;
+    const arenaR = (this.level.cols - 7) * TILE - b.w;
 
     if (b.phase === "dying") {
       b.vx = 0;
