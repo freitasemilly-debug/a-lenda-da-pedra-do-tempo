@@ -14,6 +14,20 @@ const initial: GameState = {
   bossMax: 3,
   checkpoint: false,
   muted: false,
+  bossVulnerable: false,
+  bossDefeated: false,
+  bossAttack: "",
+  enemiesDefeated: 0,
+  timeSec: 0,
+};
+
+const ATTACK_HINT: Record<string, string> = {
+  idle: "Prepare-se…",
+  leap: "Salto! Pule as ondas de choque",
+  orbs: "Orbes rasteiros! Pule por cima",
+  rain: "Chuva do tempo! Saia das marcas",
+  vuln: "VULNERÁVEL! Chegue perto e aperte X",
+  dying: "",
 };
 
 export function GameScreen() {
@@ -30,6 +44,7 @@ export function GameScreen() {
   const play = () => {
     if (!hero) return;
     setChoosing(false);
+    lastHero.current = hero;
     gameRef.current?.newGame(hero);
   };
 
@@ -44,7 +59,16 @@ export function GameScreen() {
     };
   }, []);
 
-  const hold = useCallback((key: "left" | "right" | "jump") => {
+  const lastHero = useRef<Hero>("leo");
+  const replay = () => {
+    gameRef.current?.newGame(lastHero.current);
+  };
+  const toMenu = () => {
+    setChoosing(false);
+    gameRef.current?.toMenu();
+  };
+
+  const hold = useCallback((key: "left" | "right" | "jump" | "attack") => {
     return {
       onPointerDown: (e: React.PointerEvent) => {
         e.preventDefault();
@@ -62,7 +86,7 @@ export function GameScreen() {
 
   const overlay = choosing
     ? "select"
-    : state.status === "ready" || state.status === "gameover" || state.status === "win"
+    : state.status === "ready" || state.status === "gameover" || state.status === "win" || state.status === "paused"
       ? state.status
       : null;
 
@@ -92,6 +116,13 @@ export function GameScreen() {
           </span>
           <button
             type="button"
+            onClick={() => gameRef.current?.togglePause()}
+            className="rounded-lg border-2 border-border bg-secondary px-3 py-1 font-pixel text-[9px] uppercase text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            {state.status === "paused" ? "Continuar" : "Pausa"}
+          </button>
+          <button
+            type="button"
             onClick={() => gameRef.current?.toggleMute()}
             className="rounded-lg border-2 border-border bg-secondary px-3 py-1 font-pixel text-[9px] uppercase text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
@@ -110,8 +141,8 @@ export function GameScreen() {
           style={{ aspectRatio: `${VW} / ${VH}` }}
         />
 
-        {state.status === "playing" && state.world === 3 && state.bossHp > 0 && (
-          <div className="pointer-events-none absolute left-1/2 top-3 w-64 -translate-x-1/2">
+        {state.status === "playing" && state.world === 3 && state.bossHp > 0 && state.bossAttack && (
+          <div className="pointer-events-none absolute left-1/2 top-3 w-72 -translate-x-1/2">
             <p className="text-center font-pixel text-[9px] uppercase tracking-widest text-primary-foreground drop-shadow">
               Guardião do Tempo
             </p>
@@ -119,15 +150,25 @@ export function GameScreen() {
               {Array.from({ length: state.bossMax }).map((_, i) => (
                 <span
                   key={i}
-                  className={`h-3 flex-1 rounded-sm ${i < state.bossHp ? "bg-destructive" : "bg-muted/40"}`}
+                  className={`h-3 flex-1 rounded-sm ${i < state.bossHp ? (state.bossVulnerable ? "bg-chart-4" : "bg-destructive") : "bg-muted/40"}`}
                 />
               ))}
             </div>
+            <p
+              className={`mt-2 text-center font-pixel text-[8px] uppercase leading-relaxed drop-shadow ${
+                state.bossVulnerable ? "animate-pulse text-chart-4" : "text-primary-foreground"
+              }`}
+            >
+              {ATTACK_HINT[state.bossAttack] ?? ""}
+            </p>
           </div>
         )}
 
         {state.status === "levelclear" && (
           <Banner title="Fase Concluída!" subtitle="A Pedra do Tempo pulsa mais forte…" />
+        )}
+        {state.status === "playing" && state.bossDefeated && (
+          <Banner title="O Guardião do Tempo foi derrotado!" subtitle="Um portal se abriu. Entre nele!" />
         )}
         {state.status === "dead" && <Banner title="Ops!" subtitle="Voltando ao último checkpoint…" />}
 
@@ -150,7 +191,7 @@ export function GameScreen() {
                   Começar
                 </button>
                 <p className="font-pixel text-[9px] uppercase tracking-widest text-muted-foreground">
-                  ← → mover · espaço pular
+                  ← → mover · espaço pular · X atacar · P pausar
                 </p>
               </>
             )}
@@ -189,22 +230,45 @@ export function GameScreen() {
                 </button>
               </>
             )}
+            {overlay === "paused" && (
+              <>
+                <h2 className="font-pixel text-xl text-foreground">Pausado</h2>
+                <p className="text-sm text-muted-foreground">Aperte P para continuar.</p>
+                <button
+                  type="button"
+                  onClick={() => gameRef.current?.togglePause()}
+                  className="rounded-xl border-4 border-border bg-primary px-6 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95"
+                >
+                  Continuar
+                </button>
+                <MenuBtn onClick={toMenu}>Menu principal</MenuBtn>
+              </>
+            )}
             {overlay === "win" && (
               <>
                 <h2 className="font-pixel text-lg leading-relaxed text-accent sm:text-xl">
-                  A Pedra do Tempo foi restaurada!
+                  VOCÊ RECUPEROU A PEDRA DO TEMPO!
                 </h2>
-                <p className="max-w-md text-sm text-muted-foreground">
-                  Você derrotou o Guardião do Tempo e devolveu o fluxo das horas aos três mundos.
-                </p>
-                <p className="font-pixel text-xs text-foreground">Pontuação: {state.score}</p>
-                <button
-                  type="button"
-                  onClick={openSelect}
-                  className="rounded-xl border-4 border-border bg-primary px-6 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95"
-                >
-                  Jogar novamente
-                </button>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-left font-pixel text-[10px] uppercase text-muted-foreground">
+                  <span>Pontuação</span><span className="text-foreground">{state.score}</span>
+                  <span>Moedas</span><span className="text-chart-4">{state.coins}</span>
+                  <span>Fragmentos</span><span className="text-accent">{state.fragments}</span>
+                  <span>Inimigos</span><span className="text-foreground">{state.enemiesDefeated}</span>
+                  <span>Tempo</span>
+                  <span className="text-foreground">
+                    {Math.floor(state.timeSec / 60)}:{String(state.timeSec % 60).padStart(2, "0")}
+                  </span>
+                </div>
+                <div className="flex flex-wrap justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={replay}
+                    className="rounded-xl border-4 border-border bg-primary px-6 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95"
+                  >
+                    Jogar novamente
+                  </button>
+                  <MenuBtn onClick={toMenu}>Menu principal</MenuBtn>
+                </div>
               </>
             )}
           </div>
@@ -217,9 +281,12 @@ export function GameScreen() {
           <TouchBtn {...hold("left")}>◀</TouchBtn>
           <TouchBtn {...hold("right")}>▶</TouchBtn>
         </div>
-        <TouchBtn {...hold("jump")} wide>
-          PULAR
-        </TouchBtn>
+        <div className="flex gap-3">
+          <TouchBtn {...hold("attack")}>X</TouchBtn>
+          <TouchBtn {...hold("jump")} wide>
+            PULAR
+          </TouchBtn>
+        </div>
       </div>
     </div>
   );
@@ -321,6 +388,18 @@ function HeroCard({
       <canvas ref={ref} width={120} height={126} className="h-[84px] w-[80px] [image-rendering:pixelated] sm:h-[126px] sm:w-[120px]" />
       <span className="font-pixel text-xs uppercase text-foreground">{name}</span>
       <span className="text-[11px] text-muted-foreground">{desc}</span>
+    </button>
+  );
+}
+
+function MenuBtn({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-xl border-4 border-border bg-secondary px-6 py-3 font-pixel text-xs uppercase text-secondary-foreground transition-transform hover:scale-105 active:scale-95"
+    >
+      {children}
     </button>
   );
 }
