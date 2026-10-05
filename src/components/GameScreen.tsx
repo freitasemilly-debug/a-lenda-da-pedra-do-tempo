@@ -18,6 +18,7 @@ const initial: GameState = {
   bossDefeated: false,
   bossAttack: "",
   enemiesDefeated: 0,
+  fragmentsAll: 0,
   timeSec: 0,
 };
 
@@ -253,7 +254,7 @@ export function GameScreen() {
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-left font-pixel text-[10px] uppercase text-muted-foreground">
                   <span>Pontuação</span><span className="text-foreground">{state.score}</span>
                   <span>Moedas</span><span className="text-chart-4">{state.coins}</span>
-                  <span>Fragmentos</span><span className="text-accent">{state.fragments}</span>
+                  <span>Fragmentos</span><span className="text-accent">{state.fragmentsAll}/9</span>
                   <span>Inimigos</span><span className="text-foreground">{state.enemiesDefeated}</span>
                   <span>Tempo</span>
                   <span className="text-foreground">

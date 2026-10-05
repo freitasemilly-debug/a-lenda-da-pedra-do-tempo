@@ -29,6 +29,7 @@ export interface GameState {
   bossDefeated: boolean;
   bossAttack: string;
   enemiesDefeated: number;
+  fragmentsAll: number;
   timeSec: number;
 }
 
@@ -508,6 +509,7 @@ export class Game {
   private attackT = 0;
   private attackCd = 0;
   private enemiesKilled = 0;
+  private fragsAll = 0;
   private playFrames = 0;
   private defeatMsg = 0;
   private sfx = new Sfx();
@@ -630,6 +632,7 @@ export class Game {
     this.coinsGot = 0;
     this.fragsGot = 0;
     this.enemiesKilled = 0;
+    this.fragsAll = 0;
     this.playFrames = 0;
     this.loadWorld(1, true);
     this.status = "playing";
@@ -657,6 +660,7 @@ export class Game {
       bossDefeated: this.defeatMsg > 0,
       bossAttack: this.level.boss?.active ? this.level.boss.phase : "",
       enemiesDefeated: this.enemiesKilled,
+      fragmentsAll: this.fragsAll,
       timeSec: Math.floor(this.playFrames / 60),
     });
   }
@@ -950,6 +954,7 @@ export class Game {
       if (Math.abs(f.x - (p.x + p.w / 2)) < 26 && Math.abs(f.y - (p.y + p.h / 2)) < 30) {
         f.taken = true;
         this.fragsGot++;
+        this.fragsAll++;
         this.score += 100;
         this.sfx.blip(660, 0.1, "triangle", 0.06);
         window.setTimeout(() => this.sfx.blip(990, 0.16, "triangle", 0.06), 90);
