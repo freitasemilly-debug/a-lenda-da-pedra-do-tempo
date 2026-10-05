@@ -39,7 +39,7 @@ function Index() {
 
       <section className="mx-auto mt-6 grid w-full max-w-[1000px] gap-3 sm:grid-cols-3">
         <Card title="Controles">
-          Setas ou A/D para correr, espaço (ou ▲/W) para pular. No celular, use os botões abaixo da tela.
+          Setas ← → para correr, espaço para pular, X para atacar e P para pausar. No celular, use os botões abaixo da tela.
         </Card>
         <Card title="Pontuação">
           Moeda +10 · Fragmento da Pedra +100 · Inimigo derrotado +50 · Checkpoint +50 · Fim de fase +500.
