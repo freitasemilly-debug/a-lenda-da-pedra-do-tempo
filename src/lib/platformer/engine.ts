@@ -10,7 +10,7 @@ export const GROUND = 1;
 export const BRICK = 2;
 export const PLATFORM = 3;
 
-export type Status = "ready" | "playing" | "dead" | "levelclear" | "gameover" | "win";
+export type Status = "ready" | "playing" | "dead" | "levelclear" | "gameover" | "win" | "paused";
 
 export interface GameState {
   score: number;
@@ -25,6 +25,11 @@ export interface GameState {
   bossMax: number;
   checkpoint: boolean;
   muted: boolean;
+  bossVulnerable: boolean;
+  bossDefeated: boolean;
+  bossAttack: string;
+  enemiesDefeated: number;
+  timeSec: number;
 }
 
 interface Vec {
@@ -103,6 +108,19 @@ interface Boss {
   ground: number;
   active: boolean;
   defeated: boolean;
+  phase: "idle" | "leap" | "orbs" | "rain" | "vuln" | "dying";
+  pt: number;
+  atk: number;
+  dying: number;
+}
+
+interface Shot {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  r: number;
+  warn: number;
 }
 
 interface Level {
@@ -367,8 +385,12 @@ export function buildLevel(world: number): Level {
       ground: top * TILE,
       active: false,
       defeated: false,
+      phase: "idle",
+      pt: 0,
+      atk: 0,
+      dying: 0,
     };
-    goalX = (x + 28) * TILE;
+    goalX = (x + 26) * TILE;
     goalY = (top - 5) * TILE;
   } else {
     fillGround(x, cols, top);
@@ -476,11 +498,18 @@ export class Game {
   private raf = 0;
   private acc = 0;
   private last = 0;
-  private keys: { left: boolean; right: boolean; jump: boolean } = {
+  private keys: { left: boolean; right: boolean; jump: boolean; attack: boolean } = {
     left: false,
     right: false,
     jump: false,
+    attack: false,
   };
+  private shots: Shot[] = [];
+  private attackT = 0;
+  private attackCd = 0;
+  private enemiesKilled = 0;
+  private playFrames = 0;
+  private defeatMsg = 0;
   private sfx = new Sfx();
 
   private level!: Level;
@@ -542,9 +571,36 @@ export class Game {
     this.sfx.stopMusic();
   }
 
-  setInput(name: "left" | "right" | "jump", down: boolean) {
+  setInput(name: "left" | "right" | "jump" | "attack", down: boolean) {
     this.keys[name] = down;
     if (name === "jump" && down) this.p.buffer = 8;
+    if (name === "attack" && down) this.tryAttack();
+  }
+
+  togglePause() {
+    if (this.status === "playing") {
+      this.status = "paused";
+      this.keys.left = this.keys.right = this.keys.jump = false;
+    } else if (this.status === "paused") this.status = "playing";
+    this.emit();
+  }
+
+  /** Volta para a tela inicial. */
+  toMenu() {
+    this.sfx.stopMusic();
+    this.score = 0;
+    this.lives = 3;
+    this.coinsGot = 0;
+    this.loadWorld(1, true);
+    this.status = "ready";
+    this.emit();
+  }
+
+  private tryAttack() {
+    if (this.status !== "playing" || this.attackCd > 0) return;
+    this.attackT = 14;
+    this.attackCd = 22;
+    this.sfx.blip(760, 0.07, "sawtooth", 0.04);
   }
 
   toggleMute() {
@@ -573,6 +629,8 @@ export class Game {
     this.lives = 3;
     this.coinsGot = 0;
     this.fragsGot = 0;
+    this.enemiesKilled = 0;
+    this.playFrames = 0;
     this.loadWorld(1, true);
     this.status = "playing";
     this.sfx.startMusic(1);
@@ -595,6 +653,11 @@ export class Game {
       bossMax: 3,
       checkpoint: this.level.checkpoints.some((c) => c.on),
       muted: this.sfx.muted,
+      bossVulnerable: this.level.boss?.phase === "vuln",
+      bossDefeated: this.defeatMsg > 0,
+      bossAttack: this.level.boss?.active ? this.level.boss.phase : "",
+      enemiesDefeated: this.enemiesKilled,
+      timeSec: Math.floor(this.playFrames / 60),
     });
   }
 
@@ -605,6 +668,8 @@ export class Game {
     this.placePlayer(this.level.spawn);
     this.cam = 0;
     this.particles = [];
+    this.shots = [];
+    this.defeatMsg = 0;
     if (reset) this.fragsGot = 0;
   }
 
@@ -619,6 +684,9 @@ export class Game {
 
   private onKeyDown = (e: KeyboardEvent) => {
     const k = e.key.toLowerCase();
+    if (k === "x" && !e.repeat) this.tryAttack();
+    if (k === "p" && !e.repeat) this.togglePause();
+    if (["arrowleft", "arrowright", "arrowup", "arrowdown"].includes(k)) e.preventDefault();
     if (["arrowleft", "a"].includes(k)) this.keys.left = true;
     if (["arrowright", "d"].includes(k)) this.keys.right = true;
     if ([" ", "arrowup", "w", "z"].includes(k)) {
@@ -752,6 +820,7 @@ export class Game {
     if (this.status === "dead") {
       if (--this.statusTimer <= 0) {
         this.placePlayer(this.respawn);
+        this.shots = [];
         this.status = "playing";
         this.emit();
       }
@@ -772,6 +841,11 @@ export class Game {
       return;
     }
     if (this.status !== "playing") return;
+    this.playFrames++;
+    if (this.attackT > 0) this.attackT--;
+    if (this.attackCd > 0) this.attackCd--;
+    if (this.defeatMsg > 0 && --this.defeatMsg === 0) this.emit();
+    if (this.playFrames % 60 === 0) this.emit();
 
     const p = this.p;
     // input
@@ -922,10 +996,23 @@ export class Game {
       e.y += e.vy;
       this.collideY(e);
 
+      if (this.attackT > 0) {
+        const ax = p.face > 0 ? p.x + p.w : p.x - 40;
+        if (ax + 40 > e.x && ax < e.x + e.w && p.y + p.h > e.y && p.y < e.y + e.h) {
+          e.dead = true;
+          this.enemiesKilled++;
+          this.score += 50;
+          this.sfx.blip(300, 0.09, "square", 0.06);
+          this.burst(e.x + 14, e.y + 14, "#ffb3d1", 12, 3);
+          this.emit();
+          continue;
+        }
+      }
       const hit = p.x + p.w > e.x + 3 && p.x < e.x + e.w - 3 && p.y + p.h > e.y + 3 && p.y < e.y + e.h;
       if (hit) {
         if (p.vy > 1.5 && p.y + p.h - p.vy <= e.y + 12) {
           e.dead = true;
+          this.enemiesKilled++;
           p.vy = -10.5;
           p.stomp = 12;
           this.score += 50;
@@ -940,56 +1027,22 @@ export class Game {
 
     // chefão
     const b = L.boss;
-    if (b && !b.defeated) {
-      if (!b.active && p.x > b.x - VW * 0.6) {
-        b.active = true;
-        this.sfx.slide(120, 300, 0.6, 0.08);
-      }
-      if (b.active) {
-        b.t++;
-        b.vy = Math.min(b.vy + 0.7, 16);
-        b.y += b.vy;
-        if (b.y + b.h >= b.ground) {
-          b.y = b.ground - b.h;
-          b.vy = 0;
-          if (b.t % 70 === 0) {
-            b.vy = -13;
-            b.vx = Math.sign(p.x - b.x) * (1.6 + (3 - b.hp) * 0.6);
-            this.burst(b.x + b.w / 2, b.ground, "#c9b0ff", 14, 3);
-          } else {
-            b.vx *= 0.9;
-          }
-        }
-        b.x += b.vx;
-        if (b.hurt > 0) b.hurt--;
-        const hit =
-          p.x + p.w > b.x + 6 && p.x < b.x + b.w - 6 && p.y + p.h > b.y + 6 && p.y < b.y + b.h;
-        if (hit) {
-          if (p.vy > 1.5 && p.y + p.h - p.vy <= b.y + 26) {
-            if (b.hurt === 0) {
-              b.hp--;
-              b.hurt = 70;
-              this.score += 300;
-              this.sfx.slide(420, 140, 0.35, 0.08);
-              this.burst(b.x + b.w / 2, b.y + 20, "#8ef2ff", 22, 4);
-              if (b.hp <= 0) {
-                b.defeated = true;
-                this.score += 1000;
-                this.burst(b.x + b.w / 2, b.y + 40, "#ffd75e", 40, 6);
-              }
-              this.emit();
-            }
-            p.vy = -12;
-          } else {
-            this.hitPlayer();
-          }
-        }
-      }
-    }
+    if (b && !b.defeated) this.updateBoss(b);
+    this.updateShots();
 
     // chegada
     const goalReady = !L.boss || (L.boss && L.boss.defeated);
-    if (goalReady && Math.abs(p.x - L.goalX) < 30 && p.y + p.h > L.goalY - 20) {
+    if (goalReady && L.boss && Math.abs(p.x + p.w / 2 - L.goalX) < 34 && p.y + p.h > L.goalY - 20) {
+      // porta final: termina o jogo na hora
+      this.score += 500 + this.lives * 100;
+      this.status = "win";
+      this.sfx.stopMusic();
+      this.sfx.blip(523, 0.12, "triangle", 0.07);
+      window.setTimeout(() => this.sfx.blip(784, 0.3, "triangle", 0.07), 160);
+      this.emit();
+      return;
+    }
+    if (goalReady && !L.boss && Math.abs(p.x - L.goalX) < 30 && p.y + p.h > L.goalY - 20) {
       this.status = "levelclear";
       this.statusTimer = 110;
       this.score += 500 + this.lives * 100;
@@ -1016,6 +1069,181 @@ export class Game {
     this.cam += (target - this.cam) * 0.12;
   }
 
+  private updateBoss(b: Boss) {
+    const p = this.p;
+    if (!b.active && p.x > b.x - VW * 0.6) {
+      b.active = true;
+      b.phase = "idle";
+      b.pt = 70;
+      this.sfx.slide(120, 300, 0.6, 0.08);
+      this.emit();
+    }
+    if (!b.active) return;
+    b.t++;
+    if (b.hurt > 0) b.hurt--;
+    const setPhase = (ph: Boss["phase"], t: number) => {
+      b.phase = ph;
+      b.pt = t;
+      this.emit();
+    };
+    // gravidade
+    b.vy = Math.min(b.vy + 0.7, 16);
+    b.y += b.vy;
+    const grounded = b.y + b.h >= b.ground;
+    if (grounded) {
+      b.y = b.ground - b.h;
+      b.vy = 0;
+    }
+    const arenaL = (this.level.cols - 36) * TILE;
+    const arenaR = (this.level.cols - 2) * TILE - b.w;
+
+    if (b.phase === "dying") {
+      b.vx = 0;
+      if (b.dying % 8 === 0) this.burst(b.x + Math.random() * b.w, b.y + Math.random() * b.h, "#ffd75e", 10, 4);
+      if (--b.dying <= 0) {
+        b.defeated = true;
+        this.defeatMsg = 240;
+        this.burst(b.x + b.w / 2, b.y + 40, "#8ef2ff", 50, 7);
+        this.sfx.blip(880, 0.3, "triangle", 0.07);
+        this.emit();
+      }
+      return;
+    }
+
+    b.pt--;
+    if (b.phase === "idle") {
+      b.vx *= 0.85;
+      if (b.pt <= 0) {
+        const order: Boss["phase"][] = ["leap", "orbs", "rain"];
+        const ph = order[b.atk % 3]!;
+        b.atk++;
+        if (ph === "leap") {
+          b.vy = -13;
+          b.vx = Math.max(-5, Math.min(5, (p.x - b.x) / 50));
+          setPhase("leap", 200);
+        } else if (ph === "orbs") setPhase("orbs", 110);
+        else {
+          for (let i = 0; i < 4; i++) {
+            const sx = p.x + 12 + (i - 1.5) * 110;
+            this.shots.push({ x: sx, y: -20, vx: 0, vy: 0, r: 10, warn: 55 + i * 12 });
+          }
+          setPhase("rain", 150);
+        }
+      }
+    } else if (b.phase === "leap") {
+      if (grounded && b.pt < 195) {
+        // onda de choque baixa nos dois lados (pule para desviar)
+        this.burst(b.x + b.w / 2, b.ground, "#c9b0ff", 18, 3);
+        this.shots.push({ x: b.x, y: b.ground - 10, vx: -4, vy: 0, r: 9, warn: 0 });
+        this.shots.push({ x: b.x + b.w, y: b.ground - 10, vx: 4, vy: 0, r: 9, warn: 0 });
+        b.vx = 0;
+        setPhase("vuln", 180);
+      }
+    } else if (b.phase === "orbs") {
+      b.vx = 0;
+      if (b.pt === 80 || b.pt === 50 || b.pt === 20) {
+        const dir = Math.sign(p.x - b.x) || -1;
+        this.shots.push({ x: b.x + b.w / 2, y: b.ground - 14, vx: dir * 4.2, vy: 0, r: 9, warn: 0 });
+        this.sfx.blip(220, 0.08, "square", 0.05);
+      }
+      if (b.pt <= 0) setPhase("vuln", 180);
+    } else if (b.phase === "rain") {
+      b.vx = 0;
+      if (b.pt <= 0) setPhase("vuln", 180);
+    } else if (b.phase === "vuln") {
+      b.vx = 0;
+      if (b.pt <= 0) setPhase("idle", 60);
+    }
+    b.x = Math.max(arenaL, Math.min(arenaR, b.x + b.vx));
+
+    const hit = p.x + p.w > b.x + 6 && p.x < b.x + b.w - 6 && p.y + p.h > b.y + 6 && p.y < b.y + b.h;
+    // ataque X
+    if (this.attackT > 0 && b.phase === "vuln" && b.hurt === 0) {
+      const ax = p.face > 0 ? p.x + p.w : p.x - 44;
+      const near = ax + 44 > b.x && ax < b.x + b.w && p.y + p.h > b.y && p.y < b.y + b.h + 10;
+      if (near || hit) {
+        b.hp--;
+        b.hurt = 40;
+        this.score += 300;
+        this.sfx.slide(420, 140, 0.35, 0.08);
+        this.burst(b.x + b.w / 2, b.y + 40, "#8ef2ff", 24, 4);
+        if (b.hp <= 0) {
+          b.hp = 0;
+          b.dying = 90;
+          this.shots = [];
+          this.score += 1000;
+          setPhase("dying", 0);
+        } else setPhase("idle", 70);
+        return;
+      }
+    }
+    if (hit && b.phase !== "vuln") this.hitPlayer();
+    else if (hit && p.vy > 1.5 && p.y + p.h - p.vy <= b.y + 26) p.vy = -10;
+  }
+
+  private updateShots() {
+    const p = this.p;
+    for (let i = this.shots.length - 1; i >= 0; i--) {
+      const s = this.shots[i]!;
+      if (s.warn > 0) {
+        s.warn--;
+        if (s.warn === 0) s.vy = 5;
+        continue;
+      }
+      s.x += s.vx;
+      s.y += s.vy;
+      const L = this.level;
+      if (s.y > (L.boss?.ground ?? VH) - s.r && s.vy > 0) {
+        this.burst(s.x, s.y, "#c9b0ff", 6, 2);
+        this.shots.splice(i, 1);
+        continue;
+      }
+      if (Math.abs(s.x - this.cam - VW / 2) > VW) {
+        this.shots.splice(i, 1);
+        continue;
+      }
+      if (s.x + s.r > p.x + 3 && s.x - s.r < p.x + p.w - 3 && s.y + s.r > p.y + 4 && s.y - s.r < p.y + p.h) {
+        this.hitPlayer();
+        this.shots.splice(i, 1);
+      }
+    }
+  }
+
+  private drawShots(cam: number) {
+    const g = this.ctx;
+    const ground = this.level.boss?.ground ?? VH;
+    for (const s of this.shots) {
+      const x = s.x - cam;
+      if (s.warn > 0) {
+        // marcador de aviso no chão
+        g.fillStyle = Math.floor(this.frame / 6) % 2 ? "rgba(255,95,141,0.85)" : "rgba(255,215,94,0.85)";
+        g.fillRect(x - 16, ground - 6, 32, 6);
+        g.fillRect(x - 3, ground - 26, 6, 14);
+        continue;
+      }
+      g.fillStyle = "rgba(255,95,141,0.35)";
+      g.fillRect(x - s.r - 4, s.y - s.r - 4, s.r * 2 + 8, s.r * 2 + 8);
+      g.fillStyle = "#ff5f8d";
+      g.fillRect(x - s.r, s.y - s.r, s.r * 2, s.r * 2);
+      g.fillStyle = "#ffe0ea";
+      g.fillRect(x - 3, s.y - 3, 6, 6);
+    }
+  }
+
+  private drawAttack(cam: number) {
+    if (this.attackT <= 0) return;
+    const g = this.ctx;
+    const p = this.p;
+    const ax = (p.face > 0 ? p.x + p.w : p.x - 40) - cam;
+    const a = this.attackT / 14;
+    g.globalAlpha = a;
+    g.fillStyle = "#c9f9ff";
+    g.fillRect(ax, p.y + 6, 40, 6);
+    g.fillRect(ax + (p.face > 0 ? 8 : 0), p.y + 14, 32, 6);
+    g.fillRect(ax + (p.face > 0 ? 16 : 0), p.y + 22, 24, 4);
+    g.globalAlpha = 1;
+  }
+
   /* ---------------- render ---------------- */
 
   private render() {
@@ -1039,6 +1267,8 @@ export class Game {
     this.drawBoss(cam);
     this.drawGoal(cam);
     this.drawPlayer(cam);
+    this.drawAttack(cam);
+    this.drawShots(cam);
     this.drawParticles(cam);
   }
 
@@ -1295,7 +1525,23 @@ export class Game {
     const g = this.ctx;
     const x = b.x - cam;
     if (x < -200 || x > VW + 200) return;
+    if (b.phase === "dying") {
+      g.globalAlpha = Math.max(0.15, b.dying / 90);
+    }
+    const vuln = b.phase === "vuln";
+    const shake = b.phase === "dying" ? (Math.random() - 0.5) * 6 : 0;
     const flash = b.hurt > 0 && Math.floor(this.frame / 4) % 2 === 0;
+    if (vuln) {
+      g.fillStyle = Math.floor(this.frame / 8) % 2 ? "rgba(255,215,94,0.45)" : "rgba(255,215,94,0.2)";
+      g.fillRect(x - 18, b.y - 18, b.w + 36, b.h + 36);
+      g.fillStyle = "#ffd75e";
+      g.font = "10px 'Press Start 2P', monospace";
+      g.textAlign = "center";
+      g.fillText("VULNERÁVEL! X", x + b.w / 2, b.y - 26);
+      g.textAlign = "left";
+    }
+    g.save();
+    g.translate(shake, 0);
     const glow = Math.sin(this.frame * 0.08) * 4;
     g.fillStyle = "rgba(140,110,255,0.22)";
     g.fillRect(x - 12, b.y - 12, b.w + 24, b.h + 24);
@@ -1322,6 +1568,17 @@ export class Game {
     // pés
     g.fillRect(x + 6, b.y + b.h - 8, 22, 8);
     g.fillRect(x + b.w - 28, b.y + b.h - 8, 22, 8);
+    if (vuln) {
+      // olhos fechados/tontos
+      g.fillStyle = "#2b1a4a";
+      g.fillRect(x + 18, b.y + 10, 12, 10);
+      g.fillRect(x + 46, b.y + 10, 12, 10);
+      g.fillStyle = "#ffd75e";
+      g.fillRect(x + 18, b.y + 14, 12, 3);
+      g.fillRect(x + 46, b.y + 14, 12, 3);
+    }
+    g.restore();
+    g.globalAlpha = 1;
   }
 
   private drawGoal(cam: number) {
