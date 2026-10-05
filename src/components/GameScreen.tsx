@@ -52,6 +52,7 @@ export function GameScreen() {
     if (!canvasRef.current) return;
     const game = new Game(canvasRef.current, setState);
     gameRef.current = game;
+    if (import.meta.env.DEV) (window as unknown as { __game?: Game }).__game = game;
     game.start();
     return () => {
       game.destroy();
