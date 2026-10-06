@@ -380,7 +380,7 @@ export function buildLevel(world: number): Level {
       h: 96,
       vx: 0,
       vy: 0,
-      hp: 3,
+      hp: 5,
       hurt: 0,
       t: 0,
       ground: top * TILE,
@@ -512,6 +512,9 @@ export class Game {
   private fragsAll = 0;
   private playFrames = 0;
   private defeatMsg = 0;
+  private attackHit = false;
+  private shake = 0;
+  private rings: { x: number; y: number; r: number; vr: number; life: number; max: number; c: string; w: number }[] = [];
   private sfx = new Sfx();
 
   private level!: Level;
@@ -600,9 +603,12 @@ export class Game {
 
   private tryAttack() {
     if (this.status !== "playing" || this.attackCd > 0) return;
-    this.attackT = 14;
-    this.attackCd = 22;
-    this.sfx.blip(760, 0.07, "sawtooth", 0.04);
+    this.attackT = 18;
+    this.attackCd = 24;
+    this.attackHit = false;
+    this.sfx.slide(500, 1100, 0.12, 0.04);
+    const p = this.p;
+    this.ring(p.x + p.w / 2, p.y + p.h / 2, "#8ef2ff", 2.2, 16, 3);
   }
 
   toggleMute() {
@@ -653,7 +659,7 @@ export class Game {
       worldName: WORLDS[this.world - 1]!.name,
       status: this.status,
       bossHp: this.level.boss ? this.level.boss.hp : 0,
-      bossMax: 3,
+      bossMax: 5,
       checkpoint: this.level.checkpoints.some((c) => c.on),
       muted: this.sfx.muted,
       bossVulnerable: this.level.boss?.phase === "vuln",
@@ -846,9 +852,42 @@ export class Game {
     }
     if (this.status !== "playing") return;
     this.playFrames++;
-    if (this.attackT > 0) this.attackT--;
+    if (this.attackT > 0) {
+      this.attackT--;
+      if (this.attackT % 3 === 0) {
+        const p0 = this.p;
+        this.particles.push({
+          x: p0.x + p0.w / 2 + p0.face * (20 + Math.random() * 50),
+          y: p0.y + 6 + Math.random() * (p0.h - 6),
+          vx: p0.face * (1 + Math.random() * 2),
+          vy: -Math.random() * 2,
+          life: 20,
+          max: 20,
+          c: Math.random() < 0.5 ? "#8ef2ff" : "#ffd75e",
+          s: 3,
+        });
+      }
+      if (this.attackT === 0 && !this.attackHit) {
+        // errou: pequena faísca acinzentada
+        const p0 = this.p;
+        this.burst(p0.x + p0.w / 2 + p0.face * 60, p0.y + p0.h / 2, "#9aa3c7", 5, 1.5);
+      }
+    }
     if (this.attackCd > 0) this.attackCd--;
+    if (this.shake > 0) this.shake--;
+    for (let i = this.rings.length - 1; i >= 0; i--) {
+      const r = this.rings[i]!;
+      r.r += r.vr;
+      if (--r.life <= 0) this.rings.splice(i, 1);
+    }
     if (this.defeatMsg > 0 && --this.defeatMsg === 0) this.emit();
+    if (this.defeatMsg === 150) {
+      const L0 = this.level;
+      this.burst(L0.goalX, L0.goalY + 60, "#8ef2ff", 40, 5);
+      this.ring(L0.goalX, L0.goalY + 60, "#c9f9ff", 4, 40, 5);
+      this.sfx.blip(660, 0.2, "triangle", 0.07);
+      this.emit();
+    }
     if (this.playFrames % 60 === 0) this.emit();
 
     const p = this.p;
@@ -1002,13 +1041,18 @@ export class Game {
       this.collideY(e);
 
       if (this.attackT > 0) {
-        const ax = p.face > 0 ? p.x + p.w : p.x - 40;
-        if (ax + 40 > e.x && ax < e.x + e.w && p.y + p.h > e.y && p.y < e.y + e.h) {
+        const ax = p.face > 0 ? p.x + p.w : p.x - 56;
+        if (ax + 56 > e.x && ax < e.x + e.w && p.y + p.h + 8 > e.y && p.y - 8 < e.y + e.h) {
           e.dead = true;
           this.enemiesKilled++;
           this.score += 50;
+          this.attackHit = true;
+          this.shake = 5;
           this.sfx.blip(300, 0.09, "square", 0.06);
-          this.burst(e.x + 14, e.y + 14, "#ffb3d1", 12, 3);
+          this.sfx.blip(980, 0.06, "triangle", 0.05);
+          this.burst(e.x + 14, e.y + 14, "#ffb3d1", 14, 3);
+          this.burst(e.x + 14, e.y + 14, "#8ef2ff", 10, 4);
+          this.ring(e.x + 14, e.y + 14, "#ffffff", 3, 18, 4);
           this.emit();
           continue;
         }
@@ -1036,7 +1080,7 @@ export class Game {
     this.updateShots();
 
     // chegada
-    const goalReady = !L.boss || (L.boss && L.boss.defeated);
+    const goalReady = !L.boss || (L.boss.defeated && this.defeatMsg <= 150);
     if (goalReady && L.boss && Math.abs(p.x + p.w / 2 - L.goalX) < 34 && p.y + p.h > L.goalY - 20) {
       // porta final: termina o jogo na hora
       this.score += 500 + this.lives * 100;
@@ -1119,71 +1163,83 @@ export class Game {
     if (b.phase === "idle") {
       b.vx *= 0.85;
       if (b.pt <= 0) {
-        const order: Boss["phase"][] = ["leap", "orbs", "rain"];
+        const order: Boss["phase"][] = ["orbs", "leap", "rain"];
         const ph = order[b.atk % 3]!;
         b.atk++;
         if (ph === "leap") {
-          b.vy = -13;
-          b.vx = Math.max(-5, Math.min(5, (p.x - b.x) / 50));
+          b.vy = -11;
+          b.vx = Math.max(-2.5, Math.min(2.5, (p.x - b.x) / 80));
           setPhase("leap", 200);
-        } else if (ph === "orbs") setPhase("orbs", 110);
+        } else if (ph === "orbs") setPhase("orbs", 130);
         else {
-          for (let i = 0; i < 4; i++) {
-            const sx = p.x + 12 + (i - 1.5) * 110;
-            this.shots.push({ x: sx, y: -20, vx: 0, vy: 0, r: 10, warn: 55 + i * 12 });
+          for (let i = 0; i < 3; i++) {
+            const sx = p.x + 12 + (i - 1) * 160;
+            this.shots.push({ x: sx, y: -20, vx: 0, vy: 0, r: 10, warn: 90 + i * 25 });
           }
-          setPhase("rain", 150);
+          setPhase("rain", 210);
         }
       }
     } else if (b.phase === "leap") {
       if (grounded && b.pt < 195) {
-        // onda de choque baixa nos dois lados (pule para desviar)
+        // ondas baixas e lentas nos dois lados (pule para desviar)
         this.burst(b.x + b.w / 2, b.ground, "#c9b0ff", 18, 3);
-        this.shots.push({ x: b.x, y: b.ground - 10, vx: -4, vy: 0, r: 9, warn: 0 });
-        this.shots.push({ x: b.x + b.w, y: b.ground - 10, vx: 4, vy: 0, r: 9, warn: 0 });
+        this.shots.push({ x: b.x, y: b.ground - 10, vx: -2.6, vy: 0, r: 8, warn: 0 });
+        this.shots.push({ x: b.x + b.w, y: b.ground - 10, vx: 2.6, vy: 0, r: 8, warn: 0 });
         b.vx = 0;
-        setPhase("vuln", 180);
+        this.shake = 6;
+        setPhase("vuln", 300);
       }
     } else if (b.phase === "orbs") {
       b.vx = 0;
-      if (b.pt === 80 || b.pt === 50 || b.pt === 20) {
+      if (b.pt === 100 || b.pt === 40) {
         const dir = Math.sign(p.x - b.x) || -1;
-        this.shots.push({ x: b.x + b.w / 2, y: b.ground - 14, vx: dir * 4.2, vy: 0, r: 9, warn: 0 });
+        this.shots.push({ x: b.x + b.w / 2, y: b.ground - 14, vx: dir * 2.8, vy: 0, r: 9, warn: 0 });
         this.sfx.blip(220, 0.08, "square", 0.05);
       }
-      if (b.pt <= 0) setPhase("vuln", 180);
+      if (b.pt <= 0) setPhase("vuln", 300);
     } else if (b.phase === "rain") {
       b.vx = 0;
-      if (b.pt <= 0) setPhase("vuln", 180);
+      if (b.pt <= 0) setPhase("vuln", 300);
     } else if (b.phase === "vuln") {
       b.vx = 0;
-      if (b.pt <= 0) setPhase("idle", 60);
+      if (b.pt <= 0) setPhase("idle", 120);
     }
     b.x = Math.max(arenaL, Math.min(arenaR, b.x + b.vx));
 
     const hit = p.x + p.w > b.x + 6 && p.x < b.x + b.w - 6 && p.y + p.h > b.y + 6 && p.y < b.y + b.h;
-    // ataque X
+    // ataque X (alcance generoso)
     if (this.attackT > 0 && b.phase === "vuln" && b.hurt === 0) {
-      const ax = p.face > 0 ? p.x + p.w : p.x - 44;
-      const near = ax + 44 > b.x && ax < b.x + b.w && p.y + p.h > b.y && p.y < b.y + b.h + 10;
+      const ax = p.face > 0 ? p.x + p.w : p.x - 64;
+      const near = ax + 64 > b.x - 10 && ax < b.x + b.w + 10 && p.y + p.h > b.y - 20 && p.y < b.y + b.h + 20;
       if (near || hit) {
         b.hp--;
         b.hurt = 40;
+        this.attackHit = true;
         this.score += 300;
+        this.shake = 14;
         this.sfx.slide(420, 140, 0.35, 0.08);
-        this.burst(b.x + b.w / 2, b.y + 40, "#8ef2ff", 24, 4);
+        this.sfx.blip(1200, 0.12, "triangle", 0.07);
+        const cx = b.x + b.w / 2;
+        this.burst(cx, b.y + 40, "#8ef2ff", 34, 5);
+        this.burst(cx, b.y + 40, "#ffd75e", 18, 4);
+        this.ring(cx, b.y + 50, "#ffffff", 5, 26, 6);
+        this.ring(cx, b.y + 50, "#8ef2ff", 3.5, 34, 4);
+        b.vx = p.face * 7; // recua
+        this.shots = [];
         if (b.hp <= 0) {
           b.hp = 0;
-          b.dying = 90;
-          this.shots = [];
+          b.dying = 110;
           this.score += 1000;
           setPhase("dying", 0);
-        } else setPhase("idle", 70);
+        } else setPhase("idle", 140);
         return;
       }
     }
-    if (hit && b.phase !== "vuln") this.hitPlayer();
-    else if (hit && p.vy > 1.5 && p.y + p.h - p.vy <= b.y + 26) p.vy = -10;
+    if (hit && b.phase === "leap") this.hitPlayer();
+    else if (hit && b.phase !== "vuln") {
+      // empurra sem causar dano
+      p.x = p.x + p.w / 2 < b.x + b.w / 2 ? b.x + 6 - p.w : b.x + b.w - 6;
+    }
   }
 
   private updateShots() {
@@ -1236,17 +1292,60 @@ export class Game {
   }
 
   private drawAttack(cam: number) {
-    if (this.attackT <= 0) return;
     const g = this.ctx;
-    const p = this.p;
-    const ax = (p.face > 0 ? p.x + p.w : p.x - 40) - cam;
-    const a = this.attackT / 14;
-    g.globalAlpha = a;
-    g.fillStyle = "#c9f9ff";
-    g.fillRect(ax, p.y + 6, 40, 6);
-    g.fillRect(ax + (p.face > 0 ? 8 : 0), p.y + 14, 32, 6);
-    g.fillRect(ax + (p.face > 0 ? 16 : 0), p.y + 22, 24, 4);
+    // anéis de impacto / ondas
+    for (const r of this.rings) {
+      g.globalAlpha = Math.max(0, r.life / r.max);
+      g.strokeStyle = r.c;
+      g.lineWidth = r.w;
+      g.beginPath();
+      g.arc(r.x - cam, r.y, r.r, 0, Math.PI * 2);
+      g.stroke();
+    }
     g.globalAlpha = 1;
+    if (this.attackT <= 0) return;
+    const p = this.p;
+    const t = 1 - this.attackT / 18; // 0 → 1
+    const cx = p.x + p.w / 2 - cam;
+    const cy = p.y + p.h / 2;
+    const f = p.face;
+    // brilho no personagem
+    g.globalAlpha = 0.35 * (1 - t);
+    g.fillStyle = "#8ef2ff";
+    g.fillRect(p.x - cam - 6, p.y - 6, p.w + 12, p.h + 12);
+    // arco do golpe (meia-lua de energia do tempo)
+    g.globalAlpha = Math.min(1, (1 - t) * 1.6);
+    const reach = 30 + t * 44;
+    for (let k = 0; k < 3; k++) {
+      g.strokeStyle = k === 0 ? "#ffffff" : k === 1 ? "#8ef2ff" : "#b48cff";
+      g.lineWidth = 7 - k * 2;
+      g.beginPath();
+      const start = f > 0 ? -Math.PI / 2.2 : Math.PI - Math.PI / 2.2 + Math.PI / 1.1 * 0;
+      if (f > 0) g.arc(cx, cy, reach - k * 7, -Math.PI / 2.2, Math.PI / 2.2);
+      else g.arc(cx, cy, reach - k * 7, Math.PI - Math.PI / 2.2, Math.PI + Math.PI / 2.2);
+      void start;
+      g.stroke();
+    }
+    // onda temporal que avança
+    const wx = cx + f * (24 + t * 70);
+    g.globalAlpha = 0.8 * (1 - t);
+    g.fillStyle = "#c9f9ff";
+    g.fillRect(wx - 4, cy - 22 + t * 6, 8, 44 - t * 12);
+    g.fillStyle = "#37d7f5";
+    g.fillRect(wx - f * 10 - 3, cy - 16, 6, 32);
+    // ponteiro de relógio
+    g.strokeStyle = "#ffd75e";
+    g.lineWidth = 3;
+    g.beginPath();
+    g.moveTo(cx, cy);
+    const ang = (f > 0 ? -Math.PI / 2 : -Math.PI / 2) + f * t * Math.PI;
+    g.lineTo(cx + Math.cos(ang) * reach * 0.8, cy + Math.sin(ang) * reach * 0.8);
+    g.stroke();
+    g.globalAlpha = 1;
+  }
+
+  private ring(x: number, y: number, c: string, vr: number, life: number, w = 4) {
+    this.rings.push({ x, y, r: 6, vr, life, max: life, c, w });
   }
 
   /* ---------------- render ---------------- */
@@ -1534,17 +1633,24 @@ export class Game {
       g.globalAlpha = Math.max(0.15, b.dying / 90);
     }
     const vuln = b.phase === "vuln";
-    const shake = b.phase === "dying" ? (Math.random() - 0.5) * 6 : 0;
+    const shake = b.phase === "dying" ? (Math.random() - 0.5) * 6 : b.hurt > 30 ? (Math.random() - 0.5) * 8 : 0;
     const flash = b.hurt > 0 && Math.floor(this.frame / 4) % 2 === 0;
+    g.font = "10px 'Press Start 2P', monospace";
+    g.textAlign = "center";
     if (vuln) {
-      g.fillStyle = Math.floor(this.frame / 8) % 2 ? "rgba(255,215,94,0.45)" : "rgba(255,215,94,0.2)";
+      g.fillStyle = Math.floor(this.frame / 8) % 2 ? "rgba(255,215,94,0.5)" : "rgba(255,215,94,0.22)";
       g.fillRect(x - 18, b.y - 18, b.w + 36, b.h + 36);
       g.fillStyle = "#ffd75e";
-      g.font = "10px 'Press Start 2P', monospace";
-      g.textAlign = "center";
-      g.fillText("VULNERÁVEL! X", x + b.w / 2, b.y - 26);
-      g.textAlign = "left";
+      g.fillText("VULNERÁVEL! APERTE X", x + b.w / 2, b.y - 26);
+    } else if (b.phase === "idle" && b.active && b.pt < 60 && b.pt > 0) {
+      // aviso antes do ataque
+      g.fillStyle = Math.floor(this.frame / 5) % 2 ? "#ff5f8d" : "#ffffff";
+      g.font = "20px 'Press Start 2P', monospace";
+      g.fillText("!", x + b.w / 2, b.y - 22);
+      g.fillStyle = "rgba(255,95,141,0.25)";
+      g.fillRect(x - 10, b.y - 10, b.w + 20, b.h + 20);
     }
+    g.textAlign = "left";
     g.save();
     g.translate(shake, 0);
     const glow = Math.sin(this.frame * 0.08) * 4;
@@ -1591,7 +1697,17 @@ export class Game {
     const L = this.level;
     const x = L.goalX - cam;
     if (x < -120 || x > VW + 120) return;
-    const open = !L.boss || L.boss.defeated;
+    const open = !L.boss || (L.boss.defeated && this.defeatMsg <= 150);
+    if (L.boss && open) {
+      // brilho convidativo + seta
+      const bob = Math.sin(this.frame * 0.15) * 6;
+      g.fillStyle = "#ffd75e";
+      g.font = "10px 'Press Start 2P', monospace";
+      g.textAlign = "center";
+      g.fillText("ENTRE!", x, L.goalY - 44 + bob);
+      g.fillText("▼", x, L.goalY - 28 + bob);
+      g.textAlign = "left";
+    }
     if (L.boss) {
       // portal do tempo
       const pulse = Math.sin(this.frame * 0.08) * 6;
