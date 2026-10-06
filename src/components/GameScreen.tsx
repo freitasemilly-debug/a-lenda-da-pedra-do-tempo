@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Game, VH, VW, paintHero, type GameState, type Hero } from "@/lib/platformer/engine";
+import { addRanking, loadRanking, type RankEntry } from "@/lib/platformer/ranking";
 
 const initial: GameState = {
   score: 0,
@@ -86,6 +87,29 @@ export function GameScreen() {
     setRanking(loadRanking());
     setScreen("ranking");
   };
+
+  const hold = useCallback((key: "left" | "right" | "jump" | "attack") => {
+    return {
+      onPointerDown: (e: React.PointerEvent) => {
+        e.preventDefault();
+        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+        gameRef.current?.setInput(key, true);
+      },
+      onPointerUp: (e: React.PointerEvent) => {
+        e.preventDefault();
+        gameRef.current?.setInput(key, false);
+      },
+      onPointerCancel: () => gameRef.current?.setInput(key, false),
+      onPointerLeave: () => gameRef.current?.setInput(key, false),
+    };
+  }, []);
+
+  const overlay =
+    state.status === "gameover" || state.status === "win" || state.status === "paused"
+      ? state.status
+      : state.status === "ready"
+        ? (screen ?? "menu")
+        : null;
 
 
   return (
