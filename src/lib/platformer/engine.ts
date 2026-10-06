@@ -679,6 +679,8 @@ export class Game {
     this.cam = 0;
     this.particles = [];
     this.shots = [];
+    this.rings = [];
+    this.shake = 0;
     this.defeatMsg = 0;
     if (reset) this.fragsGot = 0;
   }
@@ -1361,6 +1363,8 @@ export class Game {
     g.fillStyle = sky;
     g.fillRect(0, 0, VW, VH);
 
+    g.save();
+    if (this.shake > 0) g.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake * 0.6);
     this.drawParallax(cam, W);
     this.drawTiles(cam, W);
     this.drawPickups(cam);
@@ -1374,6 +1378,7 @@ export class Game {
     this.drawAttack(cam);
     this.drawShots(cam);
     this.drawParticles(cam);
+    g.restore();
   }
 
   private drawParallax(cam: number, W: (typeof WORLDS)[number]) {
