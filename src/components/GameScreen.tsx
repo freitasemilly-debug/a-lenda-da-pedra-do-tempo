@@ -479,3 +479,15 @@ function MenuBtn({ children, onClick }: { children: React.ReactNode; onClick: ()
     </button>
   );
 }
+
+function PrimaryBtn({ children, className, ...rest }: React.ComponentProps<"button">) {
+  return (
+    <button
+      type="button"
+      {...rest}
+      className={`rounded-xl border-4 border-border bg-primary px-8 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 ${className ?? ""}`}
+    >
+      {children}
+    </button>
+  );
+}
