@@ -166,80 +166,139 @@ export function GameScreen() {
           <Banner title="Fase Concluída!" subtitle="A Pedra do Tempo pulsa mais forte…" />
         )}
         {state.status === "playing" && state.bossDefeated && (
-          <Banner title="O Guardião do Tempo foi derrotado!" subtitle="Um portal se abriu. Entre nele!" />
+          <Banner title="O GUARDIÃO DO TEMPO FOI DERROTADO!" subtitle="Um portal vai se abrir à direita. Caminhe até ele!" />
         )}
         {state.status === "dead" && <Banner title="Ops!" subtitle="Voltando ao último checkpoint…" />}
 
         {overlay && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-[color-mix(in_oklab,var(--background)_82%,transparent)] px-6 text-center backdrop-blur-sm">
-            {overlay === "ready" && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 overflow-y-auto bg-[color-mix(in_oklab,var(--background)_86%,transparent)] px-6 py-4 text-center backdrop-blur-sm">
+            {overlay === "menu" && (
               <>
-                <h2 className="font-pixel text-xl leading-relaxed text-foreground sm:text-2xl">
-                  A Lenda da Pedra do Tempo
+                <h2 className="font-pixel text-xl leading-relaxed text-foreground sm:text-3xl">
+                  A LENDA DA <span className="text-accent">PEDRA DO TEMPO</span>
                 </h2>
-                <p className="max-w-md text-sm text-muted-foreground">
-                  Uma antiga Pedra do Tempo foi quebrada e seus fragmentos foram espalhados por diferentes mundos.
-                  Léo e Luna partiram para recuperá-los. Escolha com quem você quer viver essa aventura!
-                </p>
-                <button
-                  type="button"
-                  onClick={openSelect}
-                  className="rounded-xl border-4 border-border bg-primary px-6 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95"
-                >
-                  Começar
-                </button>
                 <p className="font-pixel text-[9px] uppercase tracking-widest text-muted-foreground">
-                  ← → mover · espaço pular · X atacar · P pausar
+                  Uma aventura de plataforma em 3 mundos
                 </p>
+                <div className="flex flex-col gap-3">
+                  <PrimaryBtn onClick={() => setScreen("name")}>Jogar</PrimaryBtn>
+                  <MenuBtn onClick={openRanking}>Ranking</MenuBtn>
+                </div>
               </>
+            )}
+            {overlay === "name" && (
+              <form
+                className="flex flex-col items-center gap-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (name.trim()) {
+                    setHero(null);
+                    setScreen("select");
+                  }
+                }}
+              >
+                <h2 className="font-pixel text-base text-foreground sm:text-xl">DIGITE SEU NOME</h2>
+                <input
+                  autoFocus
+                  value={name}
+                  maxLength={14}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  placeholder="Seu nome"
+                  className="w-64 rounded-xl border-4 border-border bg-input px-4 py-3 text-center font-pixel text-xs uppercase text-foreground outline-none focus:border-primary"
+                />
+                <PrimaryBtn type="submit" disabled={!name.trim()}>Continuar</PrimaryBtn>
+                <MenuBtn onClick={() => setScreen("menu")}>Voltar</MenuBtn>
+              </form>
             )}
             {overlay === "select" && (
               <>
                 <h2 className="font-pixel text-base leading-relaxed text-foreground sm:text-xl">
-                  Escolha seu personagem
+                  ESCOLHA SEU PERSONAGEM
                 </h2>
                 <div className="flex gap-4 sm:gap-8">
                   <HeroCard id="leo" name="Léo" desc="Menino aventureiro" selected={hero === "leo"} onPick={setHero} />
                   <HeroCard id="luna" name="Luna" desc="Menina aventureira" selected={hero === "luna"} onPick={setHero} />
                 </div>
-                {hero && (
-                  <button
-                    type="button"
-                    onClick={play}
-                    className="rounded-xl border-4 border-border bg-primary px-8 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95"
-                  >
-                    Jogar
-                  </button>
+                {hero && <PrimaryBtn onClick={() => setScreen("intro")}>Continuar</PrimaryBtn>}
+              </>
+            )}
+            {overlay === "intro" && (
+              <>
+                <h2 className="font-pixel text-base text-accent sm:text-lg">A Pedra do Tempo</h2>
+                <p className="max-w-lg text-sm leading-relaxed text-muted-foreground">
+                  A Pedra do Tempo, um artefato antigo, foi quebrada e seus fragmentos foram espalhados por
+                  diferentes mundos.
+                </p>
+                <p className="max-w-lg text-sm leading-relaxed text-muted-foreground">
+                  {hero === "luna" ? "Luna" : "Léo"} deverá atravessar esses mundos, superar obstáculos, enfrentar
+                  inimigos e recuperar os fragmentos para reconstruir a Pedra do Tempo.
+                </p>
+                <div className="rounded-xl border-2 border-border bg-card px-5 py-3">
+                  <p className="font-pixel text-[10px] uppercase text-primary">Objetivo</p>
+                  <p className="mt-2 text-sm text-foreground">
+                    Recupere os fragmentos da Pedra do Tempo e chegue ao Castelo do Tempo.
+                  </p>
+                </div>
+                <p className="font-pixel text-[10px] uppercase text-foreground">Mundo 1 — Floresta Antiga</p>
+                <PrimaryBtn onClick={() => setScreen("howto")}>Continuar</PrimaryBtn>
+              </>
+            )}
+            {overlay === "howto" && (
+              <>
+                <h2 className="font-pixel text-base text-foreground sm:text-xl">COMO JOGAR</h2>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-left font-pixel text-[10px] uppercase">
+                  <span className="text-accent">← / →</span><span className="text-foreground">Mover</span>
+                  <span className="text-accent">Espaço</span><span className="text-foreground">Pular</span>
+                  <span className="text-accent">X</span><span className="text-foreground">Atacar</span>
+                  <span className="text-accent">P</span><span className="text-foreground">Pausar</span>
+                </div>
+                <p className="max-w-md text-sm text-muted-foreground">
+                  Colete moedas e fragmentos, enfrente inimigos e avance pelas fases.
+                </p>
+                <PrimaryBtn onClick={() => startGame(hero ?? "leo")}>Começar</PrimaryBtn>
+              </>
+            )}
+            {overlay === "ranking" && (
+              <>
+                <h2 className="font-pixel text-xl text-accent">RANKING</h2>
+                {ranking.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma partida registrada ainda.</p>
+                ) : (
+                  <ol className="max-h-64 w-full max-w-md overflow-y-auto rounded-xl border-2 border-border bg-card p-3 text-left">
+                    {ranking.slice(0, 20).map((r, i) => (
+                      <li key={`${r.date}-${i}`} className="flex items-center justify-between gap-3 py-1 font-pixel text-[10px] uppercase">
+                        <span className="text-foreground">
+                          <span className="text-accent">{i + 1}º</span> — {r.name}
+                          <span className="ml-2 text-muted-foreground">({r.hero === "luna" ? "Luna" : "Léo"})</span>
+                        </span>
+                        <span className="text-chart-4">{r.score} pts</span>
+                      </li>
+                    ))}
+                  </ol>
                 )}
+                <MenuBtn onClick={() => setScreen("menu")}>Voltar</MenuBtn>
               </>
             )}
             {overlay === "gameover" && (
               <>
-                <h2 className="font-pixel text-xl text-destructive">Fim de jogo</h2>
-                <p className="text-sm text-muted-foreground">
-                  Pontuação final: <strong className="text-foreground">{state.score}</strong>
+                <h2 className="font-pixel text-xl text-destructive">FIM DE JOGO</h2>
+                <p className="font-pixel text-sm uppercase text-foreground">{name}</p>
+                <p className="font-pixel text-xs uppercase text-muted-foreground">
+                  Pontuação: <span className="text-chart-4">{state.score}</span>
                 </p>
-                <button
-                  type="button"
-                  onClick={openSelect}
-                  className="rounded-xl border-4 border-border bg-primary px-6 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95"
-                >
-                  Tentar de novo
-                </button>
+                <div className="flex flex-wrap justify-center gap-3">
+                  <PrimaryBtn onClick={replay}>Tentar novamente</PrimaryBtn>
+                  <MenuBtn onClick={toMenu}>Voltar ao menu</MenuBtn>
+                </div>
               </>
             )}
             {overlay === "paused" && (
               <>
                 <h2 className="font-pixel text-xl text-foreground">Pausado</h2>
                 <p className="text-sm text-muted-foreground">Aperte P para continuar.</p>
-                <button
-                  type="button"
-                  onClick={() => gameRef.current?.togglePause()}
-                  className="rounded-xl border-4 border-border bg-primary px-6 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95"
-                >
-                  Continuar
-                </button>
-                <MenuBtn onClick={toMenu}>Menu principal</MenuBtn>
+                <PrimaryBtn onClick={() => gameRef.current?.togglePause()}>Continuar</PrimaryBtn>
+                <MenuBtn onClick={toMenu}>Voltar ao menu</MenuBtn>
               </>
             )}
             {overlay === "win" && (
@@ -247,6 +306,7 @@ export function GameScreen() {
                 <h2 className="font-pixel text-lg leading-relaxed text-accent sm:text-xl">
                   VOCÊ RECUPEROU A PEDRA DO TEMPO!
                 </h2>
+                <p className="font-pixel text-sm uppercase text-foreground">{name}</p>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-left font-pixel text-[10px] uppercase text-muted-foreground">
                   <span>Pontuação</span><span className="text-foreground">{state.score}</span>
                   <span>Moedas</span><span className="text-chart-4">{state.coins}</span>
@@ -258,14 +318,8 @@ export function GameScreen() {
                   </span>
                 </div>
                 <div className="flex flex-wrap justify-center gap-3">
-                  <button
-                    type="button"
-                    onClick={replay}
-                    className="rounded-xl border-4 border-border bg-primary px-6 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95"
-                  >
-                    Jogar novamente
-                  </button>
-                  <MenuBtn onClick={toMenu}>Menu principal</MenuBtn>
+                  <PrimaryBtn onClick={replay}>Jogar novamente</PrimaryBtn>
+                  <MenuBtn onClick={toMenu}>Voltar ao menu</MenuBtn>
                 </div>
               </>
             )}
