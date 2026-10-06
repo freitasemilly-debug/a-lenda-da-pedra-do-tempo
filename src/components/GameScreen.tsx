@@ -23,30 +23,32 @@ const initial: GameState = {
 };
 
 const ATTACK_HINT: Record<string, string> = {
-  idle: "Prepare-se…",
-  leap: "Salto! Pule as ondas de choque",
-  orbs: "Orbes rasteiros! Pule por cima",
+  idle: "Atenção! Ele vai atacar…",
+  leap: "Salto! Pule as ondas no chão",
+  orbs: "Orbes! Pule por cima deles",
   rain: "Chuva do tempo! Saia das marcas",
   vuln: "VULNERÁVEL! Chegue perto e aperte X",
   dying: "",
 };
 
+type Screen = "menu" | "name" | "select" | "intro" | "howto" | "ranking" | null;
+
 export function GameScreen() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gameRef = useRef<Game | null>(null);
   const [state, setState] = useState<GameState>(initial);
-  const [choosing, setChoosing] = useState(false);
+  const [screen, setScreen] = useState<Screen>("menu");
   const [hero, setHero] = useState<Hero | null>(null);
+  const [name, setName] = useState("");
+  const [ranking, setRanking] = useState<RankEntry[]>([]);
+  const recorded = useRef(false);
+  const lastHero = useRef<Hero>("leo");
 
-  const openSelect = () => {
-    setHero(null);
-    setChoosing(true);
-  };
-  const play = () => {
-    if (!hero) return;
-    setChoosing(false);
-    lastHero.current = hero;
-    gameRef.current?.newGame(hero);
+  const startGame = (h: Hero) => {
+    recorded.current = false;
+    lastHero.current = h;
+    setScreen(null);
+    gameRef.current?.newGame(h);
   };
 
   useEffect(() => {
@@ -61,36 +63,30 @@ export function GameScreen() {
     };
   }, []);
 
-  const lastHero = useRef<Hero>("leo");
-  const replay = () => {
-    gameRef.current?.newGame(lastHero.current);
-  };
+  useEffect(() => {
+    if ((state.status === "gameover" || state.status === "win") && !recorded.current) {
+      recorded.current = true;
+      addRanking({
+        name: name.trim() || "JOGADOR",
+        score: state.score,
+        coins: state.coins,
+        fragments: state.fragmentsAll,
+        hero: lastHero.current,
+        date: Date.now(),
+      });
+    }
+  }, [state.status, state.score, state.coins, state.fragmentsAll, name]);
+
+  const replay = () => startGame(lastHero.current);
   const toMenu = () => {
-    setChoosing(false);
     gameRef.current?.toMenu();
+    setScreen("menu");
+  };
+  const openRanking = () => {
+    setRanking(loadRanking());
+    setScreen("ranking");
   };
 
-  const hold = useCallback((key: "left" | "right" | "jump" | "attack") => {
-    return {
-      onPointerDown: (e: React.PointerEvent) => {
-        e.preventDefault();
-        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-        gameRef.current?.setInput(key, true);
-      },
-      onPointerUp: (e: React.PointerEvent) => {
-        e.preventDefault();
-        gameRef.current?.setInput(key, false);
-      },
-      onPointerCancel: () => gameRef.current?.setInput(key, false),
-      onPointerLeave: () => gameRef.current?.setInput(key, false),
-    };
-  }, []);
-
-  const overlay = choosing
-    ? "select"
-    : state.status === "ready" || state.status === "gameover" || state.status === "win" || state.status === "paused"
-      ? state.status
-      : null;
 
   return (
     <div className="mx-auto w-full max-w-[1000px]">
