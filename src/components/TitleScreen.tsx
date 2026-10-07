@@ -64,7 +64,7 @@ export function TitleScreen({ onPlay, onRanking }: { onPlay: () => void; onRanki
     const far = ruins(7, VH - 150, 60, 170);
     const mid = ruins(21, VH - 90, 40, 120);
 
-    const drawRuins = (layer: ReturnType<typeof ruins>, color: string, off: number) => {
+    const drawRuins = (layer: ReturnType<typeof ruins>, color: string, off: number, archColor: string) => {
       g.fillStyle = color;
       for (const r of layer.out) {
         const x = ((r.x - off) % (VW * 2) + VW * 2) % (VW * 2) - 40;
@@ -73,7 +73,7 @@ export function TitleScreen({ onPlay, onRanking }: { onPlay: () => void; onRanki
         for (let k = 0; k < r.w - 6; k += 12) g.fillRect(Math.round(x + k), layer.base - r.h - 6, 6, 6);
         if (r.arch) {
           g.save();
-          g.globalCompositeOperation = "destination-out";
+          g.fillStyle = archColor;
           g.fillRect(Math.round(x + r.w * 0.3), layer.base - r.h * 0.55, Math.round(r.w * 0.4), r.h * 0.55);
           g.restore();
         }
@@ -147,7 +147,7 @@ export function TitleScreen({ onPlay, onRanking }: { onPlay: () => void; onRanki
 
       // ruínas distantes e médias (parallax lento)
       g.globalAlpha = 1;
-      drawRuins(far, C.far, t * 0.08);
+      drawRuins(far, C.far, t * 0.08, C.sky2);
       // névoa
       const fog = g.createLinearGradient(0, VH - 220, 0, VH - 60);
       fog.addColorStop(0, "transparent");
@@ -156,7 +156,7 @@ export function TitleScreen({ onPlay, onRanking }: { onPlay: () => void; onRanki
       g.fillStyle = fog;
       g.fillRect(0, VH - 220, VW, 220);
       g.globalAlpha = 1;
-      drawRuins(mid, C.mid, t * 0.2);
+      drawRuins(mid, C.mid, t * 0.2, C.far);
 
       // linhas de energia no chão
       g.globalAlpha = 0.5;
