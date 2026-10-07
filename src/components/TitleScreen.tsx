@@ -286,7 +286,7 @@ export function TitleScreen({ onPlay, onRanking }: { onPlay: () => void; onRanki
   }, []);
 
   return (
-    <div className="absolute inset-0 overflow-hidden">
+    <div className="absolute inset-0 overflow-hidden bg-title-sky">
       <canvas
         ref={ref}
         width={VW}
