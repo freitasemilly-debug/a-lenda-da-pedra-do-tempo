@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Game, VH, VW, paintHero, type GameState, type Hero } from "@/lib/platformer/engine";
 import { addRanking, loadRanking, type RankEntry } from "@/lib/platformer/ranking";
+import { TitleScreen } from "./TitleScreen";
 
 const initial: GameState = {
   score: 0,
@@ -194,22 +195,12 @@ export function GameScreen() {
         )}
         {state.status === "dead" && <Banner title="Ops!" subtitle="Voltando ao último checkpoint…" />}
 
-        {overlay && (
+        {overlay === "menu" && (
+          <TitleScreen onPlay={() => setScreen("name")} onRanking={openRanking} />
+        )}
+        {overlay && overlay !== "menu" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 overflow-y-auto bg-[color-mix(in_oklab,var(--background)_86%,transparent)] px-6 py-4 text-center backdrop-blur-sm">
-            {overlay === "menu" && (
-              <>
-                <h2 className="font-pixel text-xl leading-relaxed text-foreground sm:text-3xl">
-                  A LENDA DA <span className="text-accent">PEDRA DO TEMPO</span>
-                </h2>
-                <p className="font-pixel text-[9px] uppercase tracking-widest text-muted-foreground">
-                  Uma aventura de plataforma em 3 mundos
-                </p>
-                <div className="flex flex-col gap-3">
-                  <PrimaryBtn onClick={() => setScreen("name")}>Jogar</PrimaryBtn>
-                  <MenuBtn onClick={openRanking}>Ranking</MenuBtn>
-                </div>
-              </>
-            )}
+
             {overlay === "name" && (
               <form
                 className="flex flex-col items-center gap-4"

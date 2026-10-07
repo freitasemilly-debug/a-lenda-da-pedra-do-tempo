@@ -138,6 +138,81 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+:root {
+  --title-sky-1: oklch(0.12 0.04 280);
+  --title-sky-2: oklch(0.22 0.09 290);
+  --title-sky-3: oklch(0.3 0.1 255);
+  --title-moon: oklch(0.93 0.04 230);
+  --title-ruin-far: oklch(0.24 0.07 280);
+  --title-ruin-mid: oklch(0.18 0.06 278);
+  --title-ruin-near: oklch(0.13 0.04 275);
+  --title-cyan: oklch(0.84 0.14 200);
+  --title-stone: oklch(0.72 0.16 230);
+  --title-stone-core: oklch(0.95 0.08 200);
+  --title-violet: oklch(0.55 0.2 300);
+}
+
+@theme inline {
+  --color-title-cyan: var(--title-cyan);
+  --color-title-stone: var(--title-stone);
+  --color-title-violet: var(--title-violet);
+  --color-title-sky: var(--title-sky-1);
+}
+
+.title-glow {
+  background: linear-gradient(180deg, var(--title-stone-core) 0%, var(--title-cyan) 45%, var(--title-stone) 70%, var(--title-violet) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 var(--title-sky-1)) drop-shadow(0 0 14px color-mix(in oklab, var(--title-cyan) 45%, transparent));
+  animation: title-shimmer 6s ease-in-out infinite;
+}
+@keyframes title-shimmer {
+  0%, 100% { filter: drop-shadow(0 3px 0 var(--title-sky-1)) drop-shadow(0 0 10px color-mix(in oklab, var(--title-cyan) 35%, transparent)); transform: translateX(0); }
+  50% { filter: drop-shadow(0 3px 0 var(--title-sky-1)) drop-shadow(0 0 22px color-mix(in oklab, var(--title-cyan) 60%, transparent)); transform: translateX(0.5px); }
+}
+
+.title-led { animation: title-led 2.4s ease-in-out infinite; }
+@keyframes title-led { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+.title-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-family: var(--font-pixel);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  border-radius: 0.5rem;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+}
+.title-btn:hover, .title-btn:focus-visible { transform: translateY(-2px) scale(1.04); filter: brightness(1.15); outline: none; }
+.title-btn:active { transform: translateY(2px) scale(0.97); filter: brightness(0.95); }
+.title-btn-primary {
+  min-width: 15rem;
+  padding: 1.1rem 2.5rem;
+  font-size: 0.9rem;
+  color: var(--title-sky-1);
+  background: linear-gradient(180deg, var(--title-stone-core), var(--title-cyan) 50%, var(--title-stone));
+  border: 2px solid var(--title-stone-core);
+  box-shadow: inset 0 -5px 0 color-mix(in oklab, var(--title-sky-1) 35%, transparent), 0 0 24px color-mix(in oklab, var(--title-cyan) 40%, transparent);
+}
+.title-btn-primary:hover { box-shadow: inset 0 -5px 0 color-mix(in oklab, var(--title-sky-1) 35%, transparent), 0 0 40px color-mix(in oklab, var(--title-cyan) 70%, transparent); }
+.title-btn-secondary {
+  min-width: 12rem;
+  padding: 0.8rem 1.8rem;
+  font-size: 0.65rem;
+  color: var(--title-cyan);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--title-sky-2) 85%, transparent), color-mix(in oklab, var(--title-sky-1) 90%, transparent));
+  border: 2px solid color-mix(in oklab, var(--title-cyan) 45%, transparent);
+  box-shadow: inset 0 -4px 0 color-mix(in oklab, var(--title-sky-1) 60%, transparent);
+}
+.title-btn-secondary:hover, .title-btn-secondary:focus-visible { border-color: var(--title-cyan); box-shadow: inset 0 -4px 0 color-mix(in oklab, var(--title-sky-1) 60%, transparent), 0 0 20px color-mix(in oklab, var(--title-cyan) 40%, transparent); }
+.title-btn-arrow { display: inline-block; font-size: 0.7em; transition: transform 0.2s ease; }
+.title-btn:hover .title-btn-arrow { transform: translateX(4px); animation: title-led 0.8s ease-in-out infinite; }
+
 @layer base {
   * {
     border-color: var(--color-border);
