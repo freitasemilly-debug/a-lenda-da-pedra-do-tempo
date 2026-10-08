@@ -257,9 +257,8 @@ export function TitleScreen({ onPlay, onRanking, children }: { onPlay: () => voi
 
       // Léo e Luna em espera
       g.globalAlpha = 1;
-      if (showHeroes)
       const breathe = (ph: number) => Math.round(Math.sin(t * 0.06 + ph) * 1.5);
-      for (const [id, x, face, ph] of [["leo", 180, 1, 0], ["luna", VW - 230, -1, 2]] as const) {
+      for (const [id, x, face, ph] of showHeroes ? ([["leo", 180, 1, 0], ["luna", VW - 230, -1, 2]] as const) : []) {
         g.save();
         g.globalAlpha = 0.35;
         g.fillStyle = C.sky1;
