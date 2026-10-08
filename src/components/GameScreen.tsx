@@ -451,13 +451,12 @@ function HeroCard({
       type="button"
       onClick={() => onPick(id)}
       aria-pressed={selected}
-      className={`flex flex-col items-center gap-2 rounded-2xl border-4 bg-card px-4 py-3 transition-transform sm:px-6 ${
-        selected ? "scale-105 border-primary shadow-[var(--shadow-panel)]" : "border-border opacity-80 hover:opacity-100"
-      }`}
+      className={`tcard ${selected ? "tcard-on" : ""}`}
     >
       <canvas ref={ref} width={120} height={126} className="h-[84px] w-[80px] [image-rendering:pixelated] sm:h-[126px] sm:w-[120px]" />
       <span className="font-pixel text-xs uppercase text-foreground">{name}</span>
-      <span className="text-[11px] text-muted-foreground">{desc}</span>
+      <span className="text-[11px] text-title-stone">{desc}</span>
+      {selected && <span className="font-pixel text-[8px] uppercase tracking-widest text-title-cyan">◆ Selecionado</span>}
     </button>
   );
 }
@@ -483,5 +482,15 @@ function PrimaryBtn({ children, className, ...rest }: React.ComponentProps<"butt
     >
       {children}
     </button>
+  );
+}
+
+function ScreenTitle({ kicker, children }: { kicker: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <p className="font-pixel text-[8px] uppercase tracking-[0.5em] text-title-cyan/80 sm:text-[10px]">◆ {kicker} ◆</p>
+      <h2 className="title-glow font-pixel text-base leading-relaxed sm:text-2xl">{children}</h2>
+      <span className="h-px w-40 bg-gradient-to-r from-transparent via-title-stone to-transparent sm:w-64" />
+    </div>
   );
 }
