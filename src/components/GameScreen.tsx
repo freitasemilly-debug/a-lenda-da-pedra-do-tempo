@@ -198,12 +198,11 @@ export function GameScreen() {
         {overlay === "menu" && (
           <TitleScreen onPlay={() => setScreen("name")} onRanking={openRanking} />
         )}
-        {overlay && overlay !== "menu" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 overflow-y-auto bg-[color-mix(in_oklab,var(--background)_86%,transparent)] px-6 py-4 text-center backdrop-blur-sm">
-
+        {(overlay === "name" || overlay === "select" || overlay === "intro" || overlay === "ranking") && (
+          <TitleScreen onPlay={() => {}} onRanking={() => {}}>
             {overlay === "name" && (
               <form
-                className="flex flex-col items-center gap-4"
+                className="tpanel flex w-full max-w-sm flex-col items-center gap-5"
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (name.trim()) {
@@ -212,7 +211,7 @@ export function GameScreen() {
                   }
                 }}
               >
-                <h2 className="font-pixel text-base text-foreground sm:text-xl">DIGITE SEU NOME</h2>
+                <ScreenTitle kicker="Jogador">DIGITE SEU NOME</ScreenTitle>
                 <input
                   autoFocus
                   value={name}
@@ -220,81 +219,85 @@ export function GameScreen() {
                   onChange={(e) => setName(e.target.value)}
                   onKeyDown={(e) => e.stopPropagation()}
                   placeholder="Seu nome"
-                  className="w-64 rounded-xl border-4 border-border bg-input px-4 py-3 text-center font-pixel text-xs uppercase text-foreground outline-none focus:border-primary"
+                  className="title-input"
                 />
-                <PrimaryBtn type="submit" disabled={!name.trim()}>Continuar</PrimaryBtn>
-                <MenuBtn onClick={() => setScreen("menu")}>Voltar</MenuBtn>
+                <button type="submit" disabled={!name.trim()} className="title-btn title-btn-primary">
+                  <span className="title-btn-arrow">▶</span><span>Continuar</span>
+                </button>
+                <button type="button" onClick={() => setScreen("menu")} className="title-btn title-btn-secondary">Voltar</button>
               </form>
             )}
             {overlay === "select" && (
-              <>
-                <h2 className="font-pixel text-base leading-relaxed text-foreground sm:text-xl">
-                  ESCOLHA SEU PERSONAGEM
-                </h2>
+              <div className="flex w-full flex-col items-center gap-4 sm:gap-6">
+                <ScreenTitle kicker="Herói">ESCOLHA SEU PERSONAGEM</ScreenTitle>
                 <div className="flex gap-4 sm:gap-8">
                   <HeroCard id="leo" name="Léo" desc="Menino aventureiro" selected={hero === "leo"} onPick={setHero} />
                   <HeroCard id="luna" name="Luna" desc="Menina aventureira" selected={hero === "luna"} onPick={setHero} />
                 </div>
-                {hero && <PrimaryBtn onClick={() => setScreen("intro")}>Continuar</PrimaryBtn>}
-              </>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <button type="button" onClick={() => setScreen("name")} className="title-btn title-btn-secondary">Voltar</button>
+                  <button type="button" disabled={!hero} onClick={() => setScreen("intro")} className="title-btn title-btn-primary">
+                    <span className="title-btn-arrow">▶</span><span>Continuar</span>
+                  </button>
+                </div>
+              </div>
             )}
             {overlay === "intro" && (
-              <>
-                <h2 className="font-pixel text-base text-accent sm:text-lg">A Pedra do Tempo</h2>
-                <p className="max-w-lg text-sm leading-relaxed text-muted-foreground">
-                  A Pedra do Tempo, um artefato antigo, foi quebrada e seus fragmentos foram espalhados por
-                  diferentes mundos.
-                </p>
-                <p className="max-w-lg text-sm leading-relaxed text-muted-foreground">
-                  {hero === "luna" ? "Luna" : "Léo"} deverá atravessar esses mundos, superar obstáculos, enfrentar
-                  inimigos e recuperar os fragmentos para reconstruir a Pedra do Tempo.
-                </p>
-                <div className="rounded-xl border-2 border-border bg-card px-5 py-3">
-                  <p className="font-pixel text-[10px] uppercase text-primary">Objetivo</p>
-                  <p className="mt-2 text-sm text-foreground">
-                    Recupere os fragmentos da Pedra do Tempo e chegue ao Castelo do Tempo.
+              <div className="flex w-full max-w-2xl flex-col items-center gap-3 sm:gap-4">
+                <ScreenTitle kicker={hero === "luna" ? "Luna" : "Léo"}>MISSÃO E CONTROLES</ScreenTitle>
+                <div className="tpanel w-full text-left">
+                  <p className="font-pixel text-[9px] uppercase tracking-[0.3em] text-title-cyan">◆ Missão</p>
+                  <p className="mt-2 text-xs leading-relaxed text-foreground sm:text-sm">
+                    Recupere os 4 fragmentos da Pedra do Tempo espalhados pelos mundos e enfrente os desafios para
+                    restaurar o equilíbrio do tempo.
                   </p>
                 </div>
-                <p className="font-pixel text-[10px] uppercase text-foreground">Mundo 1 — Floresta Antiga</p>
-                <PrimaryBtn onClick={() => setScreen("howto")}>Continuar</PrimaryBtn>
-              </>
-            )}
-            {overlay === "howto" && (
-              <>
-                <h2 className="font-pixel text-base text-foreground sm:text-xl">COMO JOGAR</h2>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-left font-pixel text-[10px] uppercase">
-                  <span className="text-accent">← / →</span><span className="text-foreground">Mover</span>
-                  <span className="text-accent">Espaço</span><span className="text-foreground">Pular</span>
-                  <span className="text-accent">X</span><span className="text-foreground">Atacar</span>
-                  <span className="text-accent">P</span><span className="text-foreground">Pausar</span>
+                <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3">
+                  {[
+                    ["←→", "Setas ou A/D: mover"],
+                    ["␣", "Espaço ou ↑: pular"],
+                    ["X", "X: atacar inimigos"],
+                    ["◆", "Colete moedas e fragmentos"],
+                    ["!", "Evite obstáculos e inimigos"],
+                    ["♛", "Derrote o Guardião final"],
+                  ].map(([icon, text]) => (
+                    <div key={text} className="tchip">
+                      <span className="tchip-icon">{icon}</span>
+                      <span className="text-left text-[11px] leading-snug text-foreground sm:text-xs">{text}</span>
+                    </div>
+                  ))}
                 </div>
-                <p className="max-w-md text-sm text-muted-foreground">
-                  Colete moedas e fragmentos, enfrente inimigos e avance pelas fases.
-                </p>
-                <PrimaryBtn onClick={() => startGame(hero ?? "leo")}>Começar</PrimaryBtn>
-              </>
+                <button type="button" onClick={() => startGame(hero ?? "leo")} className="title-btn title-btn-primary mt-1">
+                  <span className="title-btn-arrow">▶</span><span>Começar a aventura</span>
+                </button>
+              </div>
             )}
             {overlay === "ranking" && (
-              <>
-                <h2 className="font-pixel text-xl text-accent">RANKING</h2>
+              <div className="flex w-full max-w-md flex-col items-center gap-4">
+                <ScreenTitle kicker="Classificação">RANKING</ScreenTitle>
                 {ranking.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhuma partida registrada ainda.</p>
+                  <p className="tpanel text-sm text-foreground">Nenhuma partida registrada ainda.</p>
                 ) : (
-                  <ol className="max-h-64 w-full max-w-md overflow-y-auto rounded-xl border-2 border-border bg-card p-3 text-left">
+                  <ol className="tpanel max-h-64 w-full overflow-y-auto text-left">
                     {ranking.slice(0, 20).map((r, i) => (
                       <li key={`${r.date}-${i}`} className="flex items-center justify-between gap-3 py-1 font-pixel text-[10px] uppercase">
                         <span className="text-foreground">
-                          <span className="text-accent">{i + 1}º</span> — {r.name}
-                          <span className="ml-2 text-muted-foreground">({r.hero === "luna" ? "Luna" : "Léo"})</span>
+                          <span className="text-title-cyan">{i + 1}º</span> — {r.name}
+                          <span className="ml-2 text-title-stone">({r.hero === "luna" ? "Luna" : "Léo"})</span>
                         </span>
-                        <span className="text-chart-4">{r.score} pts</span>
+                        <span className="text-title-cyan">{r.score} pts</span>
                       </li>
                     ))}
                   </ol>
                 )}
-                <MenuBtn onClick={() => setScreen("menu")}>Voltar</MenuBtn>
-              </>
+                <button type="button" onClick={() => setScreen("menu")} className="title-btn title-btn-secondary">Voltar</button>
+              </div>
             )}
+          </TitleScreen>
+        )}
+        {overlay && !["menu", "name", "select", "intro", "ranking"].includes(overlay) && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 overflow-y-auto bg-[color-mix(in_oklab,var(--background)_86%,transparent)] px-6 py-4 text-center backdrop-blur-sm">
+
             {overlay === "gameover" && (
               <>
                 <h2 className="font-pixel text-xl text-destructive">FIM DE JOGO</h2>
