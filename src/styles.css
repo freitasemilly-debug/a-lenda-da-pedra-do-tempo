@@ -229,3 +229,46 @@
 
   }
 }
+
+.title-btn:disabled { opacity: 0.4; pointer-events: none; }
+.title-input {
+  width: 100%; max-width: 18rem; padding: 0.9rem 1rem; text-align: center;
+  font-family: var(--font-pixel); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--title-stone-core);
+  background: color-mix(in oklab, var(--title-sky-1) 85%, transparent);
+  border: 2px solid color-mix(in oklab, var(--title-cyan) 60%, transparent);
+  border-radius: 0.5rem; outline: none;
+  box-shadow: inset 0 0 12px color-mix(in oklab, var(--title-cyan) 15%, transparent);
+  transition: border-color .2s, box-shadow .2s;
+}
+.title-input::placeholder { color: color-mix(in oklab, var(--title-cyan) 40%, transparent); }
+.title-input:focus { border-color: var(--title-cyan); box-shadow: inset 0 0 12px color-mix(in oklab, var(--title-cyan) 25%, transparent), 0 0 18px color-mix(in oklab, var(--title-cyan) 45%, transparent); }
+.tpanel {
+  padding: 1rem 1.25rem; border-radius: 0.6rem;
+  background: color-mix(in oklab, var(--title-sky-1) 75%, transparent);
+  border: 1px solid color-mix(in oklab, var(--title-cyan) 45%, transparent);
+  box-shadow: 0 0 22px color-mix(in oklab, var(--title-cyan) 18%, transparent), inset 0 0 18px color-mix(in oklab, var(--title-stone) 12%, transparent);
+  backdrop-filter: blur(3px);
+}
+.tchip {
+  display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.7rem; border-radius: 0.45rem;
+  background: color-mix(in oklab, var(--title-sky-2) 55%, transparent);
+  border: 1px solid color-mix(in oklab, var(--title-cyan) 30%, transparent);
+}
+.tchip-icon {
+  flex: none; display: grid; place-items: center; width: 1.9rem; height: 1.9rem;
+  font-family: var(--font-pixel); font-size: 0.6rem; color: var(--title-sky-1);
+  background: linear-gradient(180deg, var(--title-stone-core), var(--title-cyan));
+  clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px);
+}
+.tcard {
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 0.9rem 1.2rem; border-radius: 0.6rem;
+  background: color-mix(in oklab, var(--title-sky-1) 80%, transparent);
+  border: 2px solid color-mix(in oklab, var(--title-stone) 45%, transparent);
+  opacity: 0.8; transition: transform .2s, box-shadow .2s, border-color .2s, opacity .2s;
+}
+.tcard:hover { opacity: 1; border-color: var(--title-stone); }
+.tcard-on {
+  opacity: 1; transform: scale(1.06); border-color: var(--title-cyan);
+  box-shadow: 0 0 28px color-mix(in oklab, var(--title-cyan) 55%, transparent), inset 0 0 20px color-mix(in oklab, var(--title-cyan) 22%, transparent);
+}

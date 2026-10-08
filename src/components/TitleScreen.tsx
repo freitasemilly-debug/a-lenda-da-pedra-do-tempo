@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { paintHero, VH, VW } from "@/lib/platformer/engine";
 
 type P = { x: number; y: number; z: number; vy: number; ph: number };
@@ -7,10 +7,12 @@ function css(name: string) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-export function TitleScreen({ onPlay, onRanking }: { onPlay: () => void; onRanking: () => void }) {
+export function TitleScreen({ onPlay, onRanking, children }: { onPlay: () => void; onRanking: () => void; children?: ReactNode }) {
+  const sub = children != null;
   const ref = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
+    const showHeroes = !sub;
     const cv = ref.current;
     const g = cv?.getContext("2d");
     if (!cv || !g) return;
@@ -256,7 +258,7 @@ export function TitleScreen({ onPlay, onRanking }: { onPlay: () => void; onRanki
       // Léo e Luna em espera
       g.globalAlpha = 1;
       const breathe = (ph: number) => Math.round(Math.sin(t * 0.06 + ph) * 1.5);
-      for (const [id, x, face, ph] of [["leo", 180, 1, 0], ["luna", VW - 230, -1, 2]] as const) {
+      for (const [id, x, face, ph] of showHeroes ? ([["leo", 180, 1, 0], ["luna", VW - 230, -1, 2]] as const) : []) {
         g.save();
         g.globalAlpha = 0.35;
         g.fillStyle = C.sky1;
@@ -283,7 +285,7 @@ export function TitleScreen({ onPlay, onRanking }: { onPlay: () => void; onRanki
     };
     tick();
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [sub]);
 
   return (
     <div className="absolute inset-0 overflow-hidden bg-title-sky">
@@ -313,7 +315,11 @@ export function TitleScreen({ onPlay, onRanking }: { onPlay: () => void; onRanki
         </span>
       </div>
 
-      {/* Título e menu */}
+      {sub ? (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center overflow-y-auto bg-title-sky/40 px-5 py-6 text-center sm:px-10">
+          {children}
+        </div>
+      ) : (
       <div className="relative z-10 flex h-full flex-col items-center justify-between px-6 py-[5%] text-center">
         <div className="flex flex-col items-center gap-2 sm:gap-3">
           <p className="font-pixel text-[8px] uppercase tracking-[0.5em] text-title-cyan/80 sm:text-[10px]">
@@ -338,6 +344,7 @@ export function TitleScreen({ onPlay, onRanking }: { onPlay: () => void; onRanki
           </button>
         </nav>
       </div>
+      )}
     </div>
   );
 }
