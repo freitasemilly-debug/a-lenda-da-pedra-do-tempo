@@ -763,7 +763,8 @@ export class Game {
         this.placePlayer(this.respawn);
         this.shots = [];
         this.status = "playing";
-        this.sfx.startMusic(this.world);
+        if (this.level.boss?.active && !this.level.boss.defeated) this.sfx.playMusic("boss");
+        else this.sfx.startMusic(this.world);
         this.emit();
       }
       return;

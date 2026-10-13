@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Game, VH, VW, paintHero, type GameState, type Hero } from "@/lib/platformer/engine";
 import { addRanking, loadRanking, type RankEntry } from "@/lib/platformer/ranking";
 import { TitleScreen } from "./TitleScreen";
+import { audio } from "@/lib/platformer/audio";
 
 const initial: GameState = {
   score: 0,
@@ -45,6 +46,31 @@ export function GameScreen() {
   const [ranking, setRanking] = useState<RankEntry[]>([]);
   const recorded = useRef(false);
   const lastHero = useRef<Hero>("leo");
+
+  const [snd, setSnd] = useState(audio.settings);
+  const [sndOpen, setSndOpen] = useState(false);
+  useEffect(() => {
+    setSnd(audio.settings);
+    const un = audio.subscribe(() => setSnd({ ...audio.settings }));
+    const first = () => {
+      audio.ensure();
+      if (gameRef.current && !audio.currentTrack && stateRef.current === "ready") audio.playMusic("menu");
+    };
+    const click = (e: Event) => {
+      if ((e.target as HTMLElement | null)?.closest?.("button")) audio.click();
+    };
+    window.addEventListener("pointerdown", first);
+    window.addEventListener("keydown", first);
+    window.addEventListener("click", click, true);
+    return () => {
+      un();
+      window.removeEventListener("pointerdown", first);
+      window.removeEventListener("keydown", first);
+      window.removeEventListener("click", click, true);
+    };
+  }, []);
+  const stateRef = useRef(state.status);
+  stateRef.current = state.status;
 
   const startGame = (h: Hero) => {
     recorded.current = false;
@@ -144,13 +170,37 @@ export function GameScreen() {
           >
             {state.status === "paused" ? "Continuar" : "Pausa"}
           </button>
-          <button
-            type="button"
-            onClick={() => gameRef.current?.toggleMute()}
-            className="rounded-lg border-2 border-border bg-secondary px-3 py-1 font-pixel text-[9px] uppercase text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            {state.muted ? "Som off" : "Som on"}
-          </button>
+<div className="relative">
+            <button
+              type="button"
+              onClick={() => setSndOpen((v) => !v)}
+              aria-expanded={sndOpen}
+              className="rounded-lg border-2 border-border bg-secondary px-3 py-1 font-pixel text-[9px] uppercase text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              {snd.enabled ? "♪ Som" : "♪ Mudo"}
+            </button>
+            {sndOpen && (
+              <div className="absolute right-0 top-full z-20 mt-2 flex w-56 flex-col gap-3 rounded-xl border-2 border-border bg-card p-3 shadow-[var(--shadow-panel)]">
+                <button
+                  type="button"
+                  onClick={() => audio.set({ enabled: !snd.enabled })}
+                  className="rounded-lg border-2 border-border bg-secondary px-3 py-1 font-pixel text-[9px] uppercase text-secondary-foreground hover:bg-accent hover:text-accent-foreground"
+                >
+                  Áudio: {snd.enabled ? "ligado" : "desligado"}
+                </button>
+                <label className="flex flex-col gap-1 font-pixel text-[8px] uppercase text-muted-foreground">
+                  Música {Math.round(snd.music * 100)}%
+                  <input type="range" min={0} max={1} step={0.05} value={snd.music}
+                    onChange={(e) => audio.set({ music: Number(e.target.value) })} className="accent-accent" />
+                </label>
+                <label className="flex flex-col gap-1 font-pixel text-[8px] uppercase text-muted-foreground">
+                  Efeitos {Math.round(snd.sfx * 100)}%
+                  <input type="range" min={0} max={1} step={0.05} value={snd.sfx}
+                    onChange={(e) => { audio.set({ sfx: Number(e.target.value) }); audio.coin(); }} className="accent-accent" />
+                </label>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
