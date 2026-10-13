@@ -177,7 +177,7 @@ export function GameScreen() {
               aria-expanded={sndOpen}
               className="rounded-lg border-2 border-border bg-secondary px-3 py-1 font-pixel text-[9px] uppercase text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             >
-              {snd.enabled ? "♪ Som" : "♪ Mudo"}
+              {snd.enabled ? "Som" : "Mudo"}
             </button>
             {sndOpen && (
               <div className="absolute right-0 top-full z-20 mt-2 flex w-56 flex-col gap-3 rounded-xl border-2 border-border bg-card p-3 shadow-[var(--shadow-panel)]">
