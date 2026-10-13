@@ -1,3 +1,4 @@
+import { audio } from "./audio";
 /* A Lenda da Pedra do Tempo — motor de plataforma 2D original (canvas, pixel art procedural) */
 
 export const TILE = 32;
@@ -417,79 +418,6 @@ export function buildLevel(world: number): Level {
 
 /* ---------------- Audio ---------------- */
 
-class Sfx {
-  ctx: AudioContext | null = null;
-  muted = false;
-  musicTimer: number | null = null;
-  step = 0;
-
-  ensure() {
-    if (!this.ctx) {
-      const AC =
-        (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext })
-          .AudioContext ||
-        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (AC) this.ctx = new AC();
-    }
-    if (this.ctx && this.ctx.state === "suspended") void this.ctx.resume();
-    return this.ctx;
-  }
-
-  blip(freq: number, dur = 0.09, type: OscillatorType = "square", vol = 0.06) {
-    if (this.muted) return;
-    const ctx = this.ensure();
-    if (!ctx) return;
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = type;
-    o.frequency.setValueAtTime(freq, ctx.currentTime);
-    g.gain.setValueAtTime(vol, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
-    o.connect(g).connect(ctx.destination);
-    o.start();
-    o.stop(ctx.currentTime + dur);
-  }
-
-  slide(from: number, to: number, dur = 0.25, vol = 0.07) {
-    if (this.muted) return;
-    const ctx = this.ensure();
-    if (!ctx) return;
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = "square";
-    o.frequency.setValueAtTime(from, ctx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(Math.max(40, to), ctx.currentTime + dur);
-    g.gain.setValueAtTime(vol, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
-    o.connect(g).connect(ctx.destination);
-    o.start();
-    o.stop(ctx.currentTime + dur);
-  }
-
-  startMusic(world: number) {
-    this.stopMusic();
-    const scales = [
-      [262, 330, 392, 440, 494, 523, 440, 392],
-      [294, 349, 392, 466, 523, 466, 392, 349],
-      [220, 262, 294, 349, 392, 349, 294, 262],
-    ];
-    const melody = scales[(world - 1) % 3]!;
-    this.step = 0;
-    this.musicTimer = window.setInterval(() => {
-      if (this.muted) return;
-      const n = melody[this.step % melody.length]!;
-      this.blip(n, 0.14, "triangle", 0.04);
-      if (this.step % 2 === 0) this.blip(n / 2, 0.16, "square", 0.025);
-      this.step++;
-    }, 230);
-  }
-
-  stopMusic() {
-    if (this.musicTimer) window.clearInterval(this.musicTimer);
-    this.musicTimer = null;
-  }
-}
-
 /* ---------------- Game ---------------- */
 
 export class Game {
@@ -515,7 +443,7 @@ export class Game {
   private attackHit = false;
   private shake = 0;
   private rings: { x: number; y: number; r: number; vr: number; life: number; max: number; c: string; w: number }[] = [];
-  private sfx = new Sfx();
+  private sfx = audio;
 
   private level!: Level;
   private world = 1;
@@ -598,6 +526,7 @@ export class Game {
     this.coinsGot = 0;
     this.loadWorld(1, true);
     this.status = "ready";
+    this.sfx.playMusic("menu");
     this.emit();
   }
 
@@ -606,7 +535,7 @@ export class Game {
     this.attackT = 18;
     this.attackCd = 24;
     this.attackHit = false;
-    this.sfx.slide(500, 1100, 0.12, 0.04);
+    this.sfx.attack();
     const p = this.p;
     this.ring(p.x + p.w / 2, p.y + p.h / 2, "#8ef2ff", 2.2, 16, 3);
   }
@@ -800,12 +729,12 @@ export class Game {
     this.p.hurt = 30;
     this.p.vy = -7;
     this.p.vx = -this.p.face * 4;
-    this.sfx.slide(320, 90, 0.3);
+    if (this.lives > 0) this.sfx.damage();
     this.burst(this.p.x + 12, this.p.y + 16, "#ff6b6b", 14);
     if (this.lives <= 0) {
       this.lives = 0;
       this.status = "gameover";
-      this.sfx.stopMusic();
+      this.sfx.gameOver();
     }
     this.emit();
   }
@@ -813,12 +742,12 @@ export class Game {
   private killPlayer() {
     if (this.status !== "playing") return;
     this.lives--;
-    this.sfx.slide(400, 70, 0.5);
     if (this.lives <= 0) {
       this.lives = 0;
       this.status = "gameover";
-      this.sfx.stopMusic();
+      this.sfx.gameOver();
     } else {
+      this.sfx.lifeLost();
       this.status = "dead";
       this.statusTimer = 50;
     }
@@ -834,6 +763,7 @@ export class Game {
         this.placePlayer(this.respawn);
         this.shots = [];
         this.status = "playing";
+        this.sfx.startMusic(this.world);
         this.emit();
       }
       return;
@@ -842,7 +772,7 @@ export class Game {
       if (--this.statusTimer <= 0) {
         if (this.world >= 3) {
           this.status = "win";
-          this.sfx.stopMusic();
+          this.sfx.victory();
         } else {
           this.loadWorld(this.world + 1, false);
           this.status = "playing";
@@ -913,7 +843,7 @@ export class Game {
       p.buffer = 0;
       p.coyote = 0;
       p.onGround = false;
-      this.sfx.blip(520, 0.1, "square", 0.05);
+      this.sfx.jump();
       this.burst(p.x + 12, p.y + p.h, "#ffffff", 5, 1.4);
     }
     if (!this.keys.jump && p.vy < -4) p.vy *= 0.86;
@@ -983,7 +913,7 @@ export class Game {
         c.taken = true;
         this.coinsGot++;
         this.score += 10;
-        this.sfx.blip(880 + (this.coinsGot % 4) * 60, 0.08, "square", 0.05);
+        this.sfx.coin();
         this.burst(c.x, c.y, "#ffd75e", 7, 2);
         this.emit();
       }
@@ -997,8 +927,7 @@ export class Game {
         this.fragsGot++;
         this.fragsAll++;
         this.score += 100;
-        this.sfx.blip(660, 0.1, "triangle", 0.06);
-        window.setTimeout(() => this.sfx.blip(990, 0.16, "triangle", 0.06), 90);
+        this.sfx.fragment();
         this.burst(f.x, f.y, "#8ef2ff", 18, 3.4);
         this.emit();
       }
@@ -1050,8 +979,7 @@ export class Game {
           this.score += 50;
           this.attackHit = true;
           this.shake = 5;
-          this.sfx.blip(300, 0.09, "square", 0.06);
-          this.sfx.blip(980, 0.06, "triangle", 0.05);
+          this.sfx.enemyHit();
           this.burst(e.x + 14, e.y + 14, "#ffb3d1", 14, 3);
           this.burst(e.x + 14, e.y + 14, "#8ef2ff", 10, 4);
           this.ring(e.x + 14, e.y + 14, "#ffffff", 3, 18, 4);
@@ -1067,7 +995,7 @@ export class Game {
           p.vy = -10.5;
           p.stomp = 12;
           this.score += 50;
-          this.sfx.blip(300, 0.09, "square", 0.06);
+          this.sfx.enemyHit();
           this.burst(e.x + 14, e.y + 14, "#ffb3d1", 12, 3);
           this.emit();
         } else {
@@ -1087,9 +1015,7 @@ export class Game {
       // porta final: termina o jogo na hora
       this.score += 500 + this.lives * 100;
       this.status = "win";
-      this.sfx.stopMusic();
-      this.sfx.blip(523, 0.12, "triangle", 0.07);
-      window.setTimeout(() => this.sfx.blip(784, 0.3, "triangle", 0.07), 160);
+      this.sfx.victory();
       this.emit();
       return;
     }
@@ -1097,10 +1023,7 @@ export class Game {
       this.status = "levelclear";
       this.statusTimer = 110;
       this.score += 500 + this.lives * 100;
-      this.sfx.stopMusic();
-      this.sfx.blip(523, 0.12, "triangle", 0.07);
-      window.setTimeout(() => this.sfx.blip(659, 0.12, "triangle", 0.07), 130);
-      window.setTimeout(() => this.sfx.blip(784, 0.24, "triangle", 0.07), 260);
+      this.sfx.levelClear();
       this.burst(L.goalX, L.goalY + 40, "#ffd75e", 30, 5);
       this.emit();
     }
@@ -1127,6 +1050,7 @@ export class Game {
       b.phase = "idle";
       b.pt = 70;
       this.sfx.slide(120, 300, 0.6, 0.08);
+      this.sfx.playMusic("boss");
       this.emit();
     }
     if (!b.active) return;
@@ -1156,6 +1080,7 @@ export class Game {
         this.defeatMsg = 240;
         this.burst(b.x + b.w / 2, b.y + 40, "#8ef2ff", 50, 7);
         this.sfx.blip(880, 0.3, "triangle", 0.07);
+        this.sfx.stopMusic();
         this.emit();
       }
       return;
