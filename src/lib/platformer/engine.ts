@@ -1,4 +1,5 @@
 import { audio } from "./audio";
+import { drawSceneryBackground, drawSceneryTerrain, drawSceneryMovers } from "./scenery";
 /* A Lenda da Pedra do Tempo — motor de plataforma 2D original (canvas, pixel art procedural) */
 
 export const TILE = 32;
@@ -1280,23 +1281,16 @@ export class Game {
 
   private render() {
     const g = this.ctx;
-    const W = WORLDS[this.world - 1]!;
     const cam = Math.round(this.cam);
-
-    const sky = g.createLinearGradient(0, 0, 0, VH);
-    sky.addColorStop(0, W.sky[0]!);
-    sky.addColorStop(1, W.sky[1]!);
-    g.fillStyle = sky;
-    g.fillRect(0, 0, VW, VH);
 
     g.save();
     if (this.shake > 0) g.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake * 0.6);
-    this.drawParallax(cam, W);
-    this.drawTiles(cam, W);
+    drawSceneryBackground(g, this.world, cam, this.frame);
+    drawSceneryTerrain(g, this.level, this.world, cam);
     this.drawPickups(cam);
     this.drawCheckpoints(cam);
     this.drawSpikes(cam);
-    this.drawMovers(cam, W);
+    drawSceneryMovers(g, this.level.movers, this.world, cam);
     this.drawEnemies(cam);
     this.drawBoss(cam);
     this.drawGoal(cam);
@@ -1305,101 +1299,6 @@ export class Game {
     this.drawShots(cam);
     this.drawParticles(cam);
     g.restore();
-  }
-
-  private drawParallax(cam: number, W: (typeof WORLDS)[number]) {
-    const g = this.ctx;
-    // nuvens / lua
-    const rng = mulberry32(this.world * 31 + 7);
-    for (let i = 0; i < 9; i++) {
-      const bx = rng() * 3000;
-      const by = 30 + rng() * 140;
-      const x = ((bx - cam * 0.15) % 1400) - 100;
-      g.fillStyle = this.world === 3 ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.75)";
-      g.fillRect(x, by, 56, 12);
-      g.fillRect(x + 12, by - 10, 34, 12);
-    }
-    // montanhas distantes
-    g.fillStyle = W.far;
-    for (let i = -1; i < 14; i++) {
-      const bx = i * 240 - ((cam * 0.3) % 240);
-      const h = 150 + ((i * 53) % 90);
-      g.beginPath();
-      g.moveTo(bx, VH - 120);
-      g.lineTo(bx + 120, VH - 120 - h);
-      g.lineTo(bx + 240, VH - 120);
-      g.closePath();
-      g.fill();
-    }
-    // colinas / árvores próximas
-    g.fillStyle = W.near;
-    for (let i = -1; i < 20; i++) {
-      const bx = i * 170 - ((cam * 0.55) % 170);
-      g.fillRect(bx, VH - 150, 120, 150);
-      if (this.world !== 2) {
-        g.fillStyle = W.tree;
-        g.fillRect(bx + 40, VH - 210, 14, 70);
-        g.fillRect(bx + 20, VH - 240, 54, 40);
-        g.fillRect(bx + 30, VH - 262, 34, 26);
-        g.fillStyle = W.near;
-      } else {
-        g.fillStyle = W.tree;
-        g.fillRect(bx + 46, VH - 200, 10, 60);
-        g.fillRect(bx + 26, VH - 206, 50, 8);
-        g.fillStyle = W.near;
-      }
-    }
-    g.fillStyle = "rgba(0,0,0,0.12)";
-    g.fillRect(0, VH - 150, VW, 150);
-  }
-
-  private drawTiles(cam: number, W: (typeof WORLDS)[number]) {
-    const g = this.ctx;
-    const startC = Math.max(0, Math.floor(cam / TILE) - 1);
-    const endC = Math.min(this.level.cols, startC + VW / TILE + 3);
-    for (let cx = startC; cx < endC; cx++) {
-      for (let cy = 0; cy < ROWS; cy++) {
-        const t = this.tileAt(cx, cy);
-        if (!t) continue;
-        const x = cx * TILE - cam;
-        const y = cy * TILE;
-        if (t === GROUND) {
-          const topFree = this.tileAt(cx, cy - 1) === EMPTY;
-          g.fillStyle = W.ground;
-          g.fillRect(x, y, TILE, TILE);
-          g.fillStyle = "rgba(0,0,0,0.12)";
-          g.fillRect(x, y + TILE - 6, TILE, 6);
-          g.fillStyle = "rgba(255,255,255,0.07)";
-          g.fillRect(x + 4, y + 8, 6, 6);
-          g.fillRect(x + 20, y + 18, 5, 5);
-          if (topFree) {
-            g.fillStyle = W.grass;
-            g.fillRect(x, y, TILE, 10);
-            g.fillStyle = W.grassDark;
-            g.fillRect(x, y + 8, TILE, 4);
-            g.fillStyle = W.grass;
-            g.fillRect(x + 4, y - 4, 5, 5);
-            g.fillRect(x + 20, y - 3, 4, 4);
-          }
-        } else if (t === BRICK) {
-          g.fillStyle = W.brick;
-          g.fillRect(x, y, TILE, TILE);
-          g.fillStyle = W.brickDark;
-          g.fillRect(x, y + 14, TILE, 3);
-          g.fillRect(x + 14, y, 3, 14);
-          g.fillRect(x + 6, y + 17, 3, 15);
-          g.fillStyle = "rgba(255,255,255,0.14)";
-          g.fillRect(x, y, TILE, 3);
-        } else {
-          g.fillStyle = W.brickDark;
-          g.fillRect(x, y, TILE, 14);
-          g.fillStyle = W.grass;
-          g.fillRect(x, y, TILE, 5);
-          g.fillStyle = "rgba(0,0,0,0.2)";
-          g.fillRect(x, y + 11, TILE, 3);
-        }
-      }
-    }
   }
 
   private drawPickups(cam: number) {
@@ -1484,22 +1383,6 @@ export class Game {
         g.fillStyle = "#8d93a8";
         g.fillRect(sx, s.y + 12, 16, 4);
       }
-    }
-  }
-
-  private drawMovers(cam: number, W: (typeof WORLDS)[number]) {
-    const g = this.ctx;
-    for (const m of this.level.movers) {
-      const x = m.x - cam;
-      if (x < -140 || x > VW + 140) continue;
-      g.fillStyle = W.brick;
-      g.fillRect(x, m.y, m.w, m.h);
-      g.fillStyle = "rgba(255,255,255,0.25)";
-      g.fillRect(x, m.y, m.w, 4);
-      g.fillStyle = "rgba(0,0,0,0.25)";
-      g.fillRect(x, m.y + m.h - 4, m.w, 4);
-      g.fillStyle = "#ffd75e";
-      g.fillRect(x + m.w / 2 - 3, m.y + 5, 6, 6);
     }
   }
 
