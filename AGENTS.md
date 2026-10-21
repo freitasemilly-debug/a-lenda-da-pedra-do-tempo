@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Gameplay scenery painters live in `src/lib/platformer/scenery.ts`, read semantic CSS palettes, and must never mutate level or simulation data; this keeps visual upgrades independent of collisions and progression.
