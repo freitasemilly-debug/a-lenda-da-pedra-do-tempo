@@ -1,4 +1,5 @@
-import { describe, expect, test } from "bun:test";
+import { describe, test } from "node:test";
+import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { buildLevel, Game, TILE, ROWS } from "./engine";
 import baseline from "./simulation-baseline.json";
@@ -27,7 +28,7 @@ interface Harness {
 describe("Scenery preserves the existing game", () => {
   for (const world of [1, 2, 3]) {
     test(`world ${world}: all geometry, items, enemies, movers and exits match the original`, () => {
-      expect(hash(JSON.stringify(buildLevel(world)))).toBe(fixtures[world - 1]);
+      assert.equal(hash(JSON.stringify(buildLevel(world))), fixtures[world - 1]);
     });
     test(`world ${world}: every exposed surface retains its exact landing height`, () => {
       const game = new Game(canvas, () => {}) as unknown as Harness;
@@ -37,12 +38,12 @@ describe("Scenery preserves the existing game", () => {
       for (let x = 0; x < level.cols; x++) for (let y = 0; y < ROWS; y++) {
         if (!level.grid[y * level.cols + x] || (y > 0 && level.grid[(y - 1) * level.cols + x])) continue;
         const body = { x: x * TILE + 4, y: y * TILE - 34 + 1, w: 24, h: 34, vy: 1 };
-        expect(game.collideY(body)).toBe(true);
-        expect(body.y + body.h).toBe(y * TILE);
-        expect(body.vy).toBe(0);
+        assert.equal(game.collideY(body), true);
+        assert.equal(body.y + body.h, y * TILE);
+        assert.equal(body.vy, 0);
         landings++;
       }
-      expect(landings).toBeGreaterThan(100);
+      assert.ok(landings > 100);
     });
     test(`world ${world}: scenery never changes gameplay data`, () => {
       const level = buildLevel(world);
@@ -57,7 +58,7 @@ describe("Scenery preserves the existing game", () => {
           drawSceneryTerrain(context, level, world, cam);
           drawSceneryMovers(context, level.movers, world, cam);
         }
-        expect(JSON.stringify(level)).toBe(before);
+        assert.equal(JSON.stringify(level), before);
       } finally {
         Object.defineProperty(globalThis, "document", { configurable: true, value: previousDocument });
         globalThis.getComputedStyle = previousStyle;
@@ -67,7 +68,7 @@ describe("Scenery preserves the existing game", () => {
   test("every existing simulation, input and collision method is unchanged", () => {
     for (const [name, original] of Object.entries(baseline)) {
       const method = Reflect.get(Game.prototype, name) as () => unknown;
-      expect(hash(method.toString())).toBe(original);
+      assert.equal(hash(method.toString()), original);
     }
   });
   for (const hero of ["leo", "luna"]) test(`${hero}: normal input still runs and jumps with the original physics`, () => {
@@ -76,20 +77,20 @@ describe("Scenery preserves the existing game", () => {
     game.status = "playing";
     game.character = hero;
     for (let i = 0; i < 20; i++) game.update();
-    expect(game.p.onGround).toBe(true);
-    expect(game.p.y + game.p.h).toBe(416);
+    assert.equal(game.p.onGround, true);
+    assert.equal(game.p.y + game.p.h, 416);
     instance.setInput("right", true);
     for (let i = 0; i < 10; i++) game.update();
-    expect(game.p.vx).toBe(4.8);
+    assert.equal(game.p.vx, 4.8);
     instance.setInput("right", false);
     instance.setInput("jump", true);
     const start = game.p.y;
     game.update();
-    expect(game.p.vy).toBe(-12.42);
+    assert.equal(game.p.vy, -12.42);
     let apex = game.p.y;
     for (let i = 0; i < 40; i++) { game.update(); apex = Math.min(apex, game.p.y); }
-    expect(start - apex).toBeGreaterThan(100);
-    expect(game.p.y + game.p.h).toBe(416);
-    expect(game.p.onGround).toBe(true);
+    assert.ok(start - apex > 100);
+    assert.equal(game.p.y + game.p.h, 416);
+    assert.equal(game.p.onGround, true);
   });
 });
