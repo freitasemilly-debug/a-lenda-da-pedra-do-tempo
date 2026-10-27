@@ -194,17 +194,17 @@
 }
 
 :root {
-  --title-sky-1: oklch(0.12 0.04 280);
-  --title-sky-2: oklch(0.22 0.09 290);
-  --title-sky-3: oklch(0.3 0.1 255);
-  --title-moon: oklch(0.93 0.04 230);
-  --title-ruin-far: oklch(0.24 0.07 280);
-  --title-ruin-mid: oklch(0.18 0.06 278);
-  --title-ruin-near: oklch(0.13 0.04 275);
-  --title-cyan: oklch(0.84 0.14 200);
-  --title-stone: oklch(0.72 0.16 230);
-  --title-stone-core: oklch(0.95 0.08 200);
-  --title-violet: oklch(0.55 0.2 300);
+  --title-sky-1: oklch(0.19 0.04 160);
+  --title-sky-2: oklch(0.4 0.08 150);
+  --title-sky-3: oklch(0.76 0.12 80);
+  --title-moon: oklch(0.95 0.08 95);
+  --title-ruin-far: oklch(0.5 0.07 158);
+  --title-ruin-mid: oklch(0.35 0.07 156);
+  --title-ruin-near: oklch(0.27 0.05 60);
+  --title-cyan: oklch(0.86 0.15 88);
+  --title-stone: oklch(0.74 0.13 160);
+  --title-stone-core: oklch(0.96 0.06 110);
+  --title-violet: oklch(0.68 0.15 55);
 }
 
 @theme inline {

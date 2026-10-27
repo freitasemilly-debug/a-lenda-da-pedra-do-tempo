@@ -73,6 +73,11 @@ export function TitleScreen({ onPlay, onRanking, children }: { onPlay: () => voi
         g.fillRect(Math.round(x), layer.base - r.h, Math.round(r.w), r.h + 200);
         // ameias
         for (let k = 0; k < r.w - 6; k += 12) g.fillRect(Math.round(x + k), layer.base - r.h - 6, 6, 6);
+        if (layer.base > VH - 120) {
+          // copa de árvores sobre as ruínas médias, como na Floresta Antiga
+          g.fillRect(Math.round(x - 8), layer.base - r.h - 22, Math.round(r.w + 16), 16);
+          g.fillRect(Math.round(x + 4), layer.base - r.h - 34, Math.round(r.w - 8), 12);
+        }
         if (r.arch) {
           g.save();
           g.fillStyle = archColor;
@@ -174,9 +179,12 @@ export function TitleScreen({ onPlay, onRanking, children }: { onPlay: () => voi
       g.fillRect(0, VH - 52, VW, 52);
       g.fillStyle = C.mid;
       for (let x = 0; x < VW; x += 32) g.fillRect(x, VH - 52, 30, 4);
-      g.globalAlpha = 0.6;
-      g.fillStyle = C.cyan;
-      g.fillRect(0, VH - 52, VW, 1);
+      // grama e flores do caminho
+      g.fillStyle = C.stone;
+      g.fillRect(0, VH - 54, VW, 6);
+      for (let x = 0; x < VW; x += 16) g.fillRect(x + ((x * 7) % 9), VH - 58, 4, 4);
+      g.fillStyle = C.violet;
+      for (let x = 40; x < VW; x += 110) g.fillRect(x + ((x * 13) % 30), VH - 60, 4, 4);
 
       // fragmentos flutuantes (girando lentamente)
       for (const sh of shards) {
