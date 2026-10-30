@@ -29,3 +29,13 @@ export function addRanking(e: RankEntry) {
     /* ignore */
   }
 }
+
+
+/** Remove somente os resultados salvos; novas partidas continuam sendo registradas normalmente. */
+export function clearRanking() {
+  try {
+    window.localStorage.removeItem(KEY);
+  } catch {
+    /* ignore */
+  }
+}
