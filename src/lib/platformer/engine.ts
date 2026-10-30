@@ -11,6 +11,7 @@ export const EMPTY = 0;
 export const GROUND = 1;
 export const BRICK = 2;
 export const PLATFORM = 3;
+export const QUESTION = 4;
 
 export type Status = "ready" | "playing" | "dead" | "levelclear" | "gameover" | "win" | "paused";
 
@@ -401,6 +402,19 @@ export function buildLevel(world: number): Level {
     goalY = (top - 5) * TILE;
   }
 
+  // Blocos-surpresa: posicionados acima de superfícies já existentes, sem alterar plataformas ou colisões do cenário.
+  for (let cx = 18; cx < cols - 12; cx += 37) {
+    for (let surfaceY = 5; surfaceY < ROWS - 2; surfaceY++) {
+      const below = grid[(surfaceY + 2) * cols + cx] ?? EMPTY;
+      const here = grid[surfaceY * cols + cx] ?? EMPTY;
+      const clear = here === EMPTY && (grid[(surfaceY + 1) * cols + cx] ?? EMPTY) === EMPTY;
+      if (clear && (below === GROUND || below === BRICK || below === PLATFORM)) {
+        set(cx, surfaceY, QUESTION);
+        break;
+      }
+    }
+  }
+
   return {
     grid,
     cols,
@@ -665,7 +679,7 @@ export class Game {
 
   private solidAt(px: number, py: number) {
     const t = this.tileAt(Math.floor(px / TILE), Math.floor(py / TILE));
-    return t === GROUND || t === BRICK || t === PLATFORM;
+    return t === GROUND || t === BRICK || t === PLATFORM || t === QUESTION;
   }
 
   private collideX(o: { x: number; y: number; w: number; h: number; vx: number }) {
@@ -699,7 +713,18 @@ export class Game {
       const head = o.y;
       for (let x = o.x + 2; x <= o.x + o.w - 2; x += 8) {
         if (this.solidAt(x, head)) {
-          o.y = (Math.floor(head / TILE) + 1) * TILE + 0.01;
+          const cx = Math.floor(x / TILE);
+          const cy = Math.floor(head / TILE);
+          const hitTile = this.tileAt(cx, cy);
+          if (hitTile === QUESTION && o === this.p) {
+            this.level.grid[cy * this.level.cols + cx] = BRICK;
+            this.coinsGot++;
+            this.score += 100;
+            this.sfx.coin();
+            this.burst(cx * TILE + TILE / 2, cy * TILE, "#ffd75e", 12, 2.5);
+            this.emit();
+          }
+          o.y = (cy + 1) * TILE + 0.01;
           o.vy = 0;
           break;
         }
@@ -1395,19 +1420,28 @@ export class Game {
       const y = e.y;
       const wob = Math.sin(e.t * 2) * 2;
       if (e.kind === "walker") {
-        g.fillStyle = "#b05be0";
-        g.fillRect(x + 2, y + 6 + wob, 24, 20);
-        g.fillStyle = "#7b32a8";
-        g.fillRect(x + 2, y + 22 + wob, 24, 4);
-        g.fillStyle = "#ffe9a8";
-        g.fillRect(x + 6, y + 11 + wob, 6, 6);
-        g.fillRect(x + 16, y + 11 + wob, 6, 6);
-        g.fillStyle = "#2a1033";
-        g.fillRect(x + 8 + (e.vx > 0 ? 2 : 0), y + 13 + wob, 3, 3);
-        g.fillRect(x + 18 + (e.vx > 0 ? 2 : 0), y + 13 + wob, 3, 3);
-        g.fillStyle = "#7b32a8";
-        g.fillRect(x, y + 26, 8, 4);
-        g.fillRect(x + 20, y + 26, 8, 4);
+        // Criaturinha original de chapéu arredondado, inspirada em cogumelos de fantasia.
+        g.fillStyle = "rgba(25,18,32,0.22)";
+        g.fillRect(x + 4, y + 27, 20, 3);
+        g.fillStyle = "#f4d7b0";
+        g.fillRect(x + 7, y + 17 + wob, 14, 11);
+        g.fillStyle = "#c58a55";
+        g.fillRect(x + 4, y + 20 + wob, 5, 7);
+        g.fillRect(x + 19, y + 20 + wob, 5, 7);
+        g.fillStyle = "#d94b55";
+        g.fillRect(x + 3, y + 9 + wob, 22, 8);
+        g.fillRect(x + 7, y + 5 + wob, 14, 5);
+        g.fillStyle = "#ffdfb0";
+        g.fillRect(x + 1, y + 13 + wob, 26, 4);
+        g.fillStyle = "#fff1df";
+        g.fillRect(x + 7, y + 8 + wob, 5, 4);
+        g.fillRect(x + 18, y + 12 + wob, 4, 3);
+        g.fillStyle = "#302033";
+        g.fillRect(x + 10 + (e.vx > 0 ? 2 : 0), y + 19 + wob, 3, 4);
+        g.fillRect(x + 17 + (e.vx > 0 ? 2 : 0), y + 19 + wob, 3, 4);
+        g.fillStyle = "#7a493d";
+        g.fillRect(x + 6, y + 27, 7, 3);
+        g.fillRect(x + 16, y + 27, 7, 3);
       } else if (e.kind === "chaser") {
         g.fillStyle = "#e0573f";
         g.fillRect(x + 1, y + 4, 26, 22);
@@ -1468,31 +1502,49 @@ export class Game {
     g.save();
     g.translate(shake, 0);
     const glow = Math.sin(this.frame * 0.08) * 4;
-    g.fillStyle = "rgba(140,110,255,0.22)";
-    g.fillRect(x - 12, b.y - 12, b.w + 24, b.h + 24);
-    g.fillStyle = flash ? "#ffffff" : "#5b4aa8";
-    g.fillRect(x, b.y + 16, b.w, b.h - 16);
-    g.fillStyle = flash ? "#ffffff" : "#7a66d6";
-    g.fillRect(x + 8, b.y, b.w - 16, 34);
-    // olhos
-    g.fillStyle = "#ffd75e";
-    g.fillRect(x + 18, b.y + 10, 12, 10);
-    g.fillRect(x + 46, b.y + 10, 12, 10);
-    g.fillStyle = "#2b1a4a";
-    g.fillRect(x + 22, b.y + 13, 5, 6);
-    g.fillRect(x + 50, b.y + 13, 5, 6);
-    // núcleo de tempo
-    g.fillStyle = "#37d7f5";
-    g.fillRect(x + b.w / 2 - 10, b.y + 44 + glow * 0.2, 20, 20);
-    g.fillStyle = "#c9f9ff";
-    g.fillRect(x + b.w / 2 - 4, b.y + 50 + glow * 0.2, 8, 8);
-    // braços
-    g.fillStyle = flash ? "#ffffff" : "#463a86";
-    g.fillRect(x - 10, b.y + 30 + glow, 12, 34);
-    g.fillRect(x + b.w - 2, b.y + 30 - glow, 12, 34);
-    // pés
-    g.fillRect(x + 6, b.y + b.h - 8, 22, 8);
-    g.fillRect(x + b.w - 28, b.y + b.h - 8, 22, 8);
+    g.fillStyle = "rgba(140,110,255,0.25)";
+    g.fillRect(x - 15, b.y - 14, b.w + 30, b.h + 28);
+    // Silhueta do Guardião: corpo robusto, ombreiras, chifres e coroa de cristal.
+    g.fillStyle = flash ? "#ffffff" : "#49345f";
+    g.fillRect(x + 4, b.y + 20, b.w - 8, b.h - 22);
+    g.fillStyle = flash ? "#ffffff" : "#76506f";
+    g.fillRect(x + 10, b.y + 5, b.w - 20, 35);
+    g.fillRect(x - 5, b.y + 30, 13, 26);
+    g.fillRect(x + b.w - 8, b.y + 30, 13, 26);
+    // chifres/coroa
+    g.fillStyle = "#d9b66e";
+    g.fillRect(x + 10, b.y + 2, 7, 12);
+    g.fillRect(x + b.w - 17, b.y + 2, 7, 12);
+    g.fillRect(x + 19, b.y - 5, 8, 10);
+    g.fillRect(x + b.w - 27, b.y - 5, 8, 10);
+    g.fillStyle = "#f2d58a";
+    g.fillRect(x + 21, b.y - 8, 5, 5);
+    g.fillRect(x + b.w - 26, b.y - 8, 5, 5);
+    // olhos brilhantes e sobrancelhas
+    g.fillStyle = "#f7cf67";
+    g.fillRect(x + 17, b.y + 17, 13, 9);
+    g.fillRect(x + b.w - 30, b.y + 17, 13, 9);
+    g.fillStyle = "#21182f";
+    g.fillRect(x + 21, b.y + 19, 5, 6);
+    g.fillRect(x + b.w - 26, b.y + 19, 5, 6);
+    g.fillRect(x + 15, b.y + 13, 16, 3);
+    g.fillRect(x + b.w - 31, b.y + 13, 16, 3);
+    // núcleo de tempo protegido por placas
+    g.fillStyle = "#1c294d";
+    g.fillRect(x + b.w / 2 - 15, b.y + 43 + glow * 0.2, 30, 25);
+    g.fillStyle = vuln ? "#fff2a6" : "#37d7f5";
+    g.fillRect(x + b.w / 2 - 9, b.y + 48 + glow * 0.2, 18, 15);
+    g.fillStyle = "#ffffff";
+    g.fillRect(x + b.w / 2 - 3, b.y + 51 + glow * 0.2, 6, 8);
+    // manoplas e botas
+    g.fillStyle = flash ? "#ffffff" : "#342642";
+    g.fillRect(x - 11, b.y + 50 + glow, 15, 16);
+    g.fillRect(x + b.w - 4, b.y + 50 - glow, 15, 16);
+    g.fillRect(x + 7, b.y + b.h - 8, 22, 8);
+    g.fillRect(x + b.w - 29, b.y + b.h - 8, 22, 8);
+    g.fillStyle = "#d9b66e";
+    g.fillRect(x + 9, b.y + b.h - 8, 18, 3);
+    g.fillRect(x + b.w - 27, b.y + b.h - 8, 18, 3);
     if (vuln) {
       // olhos fechados/tontos
       g.fillStyle = "#2b1a4a";
