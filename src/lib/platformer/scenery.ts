@@ -306,6 +306,16 @@ export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLe
         block(g, p.glow, x + 23, y + 5, 2, 6);
         block(g, p.glow, x + 21, y + 7, 6, 2);
       }
+    } else if (t === 4) {
+      // Bloco surpresa: o desenho é apenas visual; a colisão usa o mesmo tile de 32px.
+      block(g, "#9a5b22", x, y, TILE, TILE);
+      block(g, "#f5b83d", x + 2, y + 2, TILE - 4, TILE - 4);
+      block(g, "#ffe28a", x + 4, y + 4, TILE - 8, 4);
+      block(g, "#c77b25", x + 4, y + 26, TILE - 8, 3);
+      block(g, "#fff2b0", x + 13, y + 7, 6, 4);
+      block(g, "#fff2b0", x + 17, y + 11, 5, 7);
+      block(g, "#fff2b0", x + 13, y + 18, 6, 4);
+      block(g, "#fff2b0", x + 13, y + 24, 5, 3);
     } else {
       // The original floating tile is painted 14px tall; its collider is unchanged.
       block(g, p.edge, x, y, TILE, 14);
