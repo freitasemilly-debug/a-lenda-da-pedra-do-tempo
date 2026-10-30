@@ -330,11 +330,13 @@ export function TitleScreen({ onPlay, onRanking, children }: { onPlay: () => voi
       ) : (
       <div className="relative z-10 flex h-full flex-col items-center justify-between px-6 py-[5%] text-center">
         <div className="flex flex-col items-center gap-2 sm:gap-3">
-          <p className="font-pixel text-[8px] uppercase tracking-[0.5em] text-title-cyan/80 sm:text-[10px]">
-            ◆ A Lenda da ◆
+          <p className="font-pixel text-[8px] uppercase tracking-[0.5em] text-amber-200 sm:text-[10px]">
+            ◆ UMA AVENTURA ATRAVÉS DO TEMPO ◆
           </p>
           <h2 className="title-glow font-pixel text-2xl leading-tight sm:text-5xl">
-            PEDRA DO TEMPO
+            <span className="text-amber-300">A LENDA DA</span>
+            <br />
+            <span className="text-cyan-300">PEDRA DO </span><span className="text-rose-300">TEMPO</span>
           </h2>
           <span className="h-px w-40 bg-gradient-to-r from-transparent via-title-stone to-transparent sm:w-72" />
         </div>
