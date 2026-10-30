@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Game, VH, VW, paintHero, type GameState, type Hero } from "@/lib/platformer/engine";
-import { addRanking, loadRanking, type RankEntry } from "@/lib/platformer/ranking";
+import { addRanking, clearRanking, loadRanking, type RankEntry } from "@/lib/platformer/ranking";
 import { TitleScreen } from "./TitleScreen";
 import { audio } from "@/lib/platformer/audio";
 
@@ -44,6 +44,7 @@ export function GameScreen() {
   const [hero, setHero] = useState<Hero | null>(null);
   const [name, setName] = useState("");
   const [ranking, setRanking] = useState<RankEntry[]>([]);
+  const [confirmClearRanking, setConfirmClearRanking] = useState(false);
   const recorded = useRef(false);
   const lastHero = useRef<Hero>("leo");
 
@@ -147,19 +148,17 @@ export function GameScreen() {
           <Stat label="Pontos" value={state.score.toString().padStart(6, "0")} />
           <Stat label="Moedas" value={`x${state.coins}`} accent="coin" />
           <Stat label="Fragmentos" value={`${state.fragments}/${state.fragmentsTotal}`} accent="shard" />
-          <div className="flex items-center gap-2">
-            <span className="font-pixel text-[9px] uppercase tracking-widest text-muted-foreground">Vidas</span>
-            <div className="flex gap-1">
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className={`h-4 w-4 rounded-[3px] ${i < state.lives ? "bg-destructive" : "bg-muted"}`}
-                />
-              ))}
-            </div>
-          </div>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-background/40 px-2 py-1">
+            <span className="font-pixel text-[8px] uppercase tracking-widest text-muted-foreground">Vidas</span>
+            <div className="flex items-center gap-1" aria-label={`${state.lives} vidas restantes`}>
+              {[0, 1, 2].map((i) => (
+                <span key={i} className={`text-lg leading-none drop-shadow-sm ${i < state.lives ? "text-rose-500" : "text-muted-foreground/35"}`} aria-hidden>♥</span>
+              ))}
+              <span className="ml-1 font-pixel text-[9px] tabular-nums text-foreground">{state.lives}/3</span>
+            </div>
+          </div>
           <span className="font-pixel text-[9px] uppercase tracking-widest text-accent">
             Mundo {state.world} · {state.worldName}
           </span>
@@ -340,7 +339,22 @@ export function GameScreen() {
                     ))}
                   </ol>
                 )}
-                <button type="button" onClick={() => setScreen("menu")} className="title-btn title-btn-secondary">Voltar</button>
+                {!confirmClearRanking ? (
+                  <button type="button" onClick={() => setConfirmClearRanking(true)} disabled={ranking.length === 0}
+                    className="rounded-lg border-2 border-rose-400/70 bg-rose-500/15 px-4 py-2 font-pixel text-[9px] uppercase text-rose-200 transition hover:bg-rose-500/30 disabled:cursor-not-allowed disabled:opacity-40">
+                    Limpar ranking
+                  </button>
+                ) : (
+                  <div className="tpanel flex w-full flex-col items-center gap-3">
+                    <p className="font-pixel text-[10px] uppercase text-foreground">Apagar todos os resultados?</p>
+                    <p className="text-xs text-muted-foreground">Essa ação não pode ser desfeita.</p>
+                    <div className="flex flex-wrap justify-center gap-3">
+                      <button type="button" onClick={() => setConfirmClearRanking(false)} className="title-btn title-btn-secondary">Cancelar</button>
+                      <button type="button" onClick={() => { clearRanking(); setRanking([]); setConfirmClearRanking(false); }} className="title-btn title-btn-primary">Confirmar</button>
+                    </div>
+                  </div>
+                )}
+                <button type="button" onClick={() => { setConfirmClearRanking(false); setScreen("menu"); }} className="title-btn title-btn-secondary">Voltar</button>
               </div>
             )}
           </TitleScreen>
