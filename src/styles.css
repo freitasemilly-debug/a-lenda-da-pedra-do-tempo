@@ -409,6 +409,7 @@
 .heart-full { fill: var(--opening-red); }
 .heart-empty { fill: color-mix(in oklab, var(--enemy-light) 22%, var(--enemy-dark)); }
 .heart-shine { fill: var(--enemy-light); opacity: .7; }
+.boss-hud { background: color-mix(in oklab, var(--enemy-dark) 90%, transparent); border-radius: 6px; padding: 7px; }
 @media (max-width: 639px) {
   .opening-menu { padding: 12px; gap: 12px; }
   .opening-title { font-size: 27px; max-width: 380px; }

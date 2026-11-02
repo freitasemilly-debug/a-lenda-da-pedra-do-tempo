@@ -214,8 +214,8 @@ export function GameScreen() {
         </div>}
 
         {state.status === "playing" && state.world === 3 && state.bossHp > 0 && state.bossAttack && (
-          <div className="pointer-events-none absolute left-1/2 top-3 w-72 -translate-x-1/2">
-            <p className="text-center font-pixel text-[9px] uppercase tracking-widest text-primary-foreground drop-shadow">
+          <div className="boss-hud pointer-events-none absolute left-1/2 top-3 w-72 -translate-x-1/2">
+            <p className="text-center font-pixel text-[9px] uppercase tracking-widest text-foreground drop-shadow">
               Guardião do Tempo
             </p>
             <div className="mt-1 flex gap-1">
@@ -228,7 +228,7 @@ export function GameScreen() {
             </div>
             <p
               className={`mt-2 text-center font-pixel text-[8px] uppercase leading-relaxed drop-shadow ${
-                state.bossVulnerable ? "animate-pulse text-chart-4" : "text-primary-foreground"
+                state.bossVulnerable ? "animate-pulse text-chart-4" : "text-foreground"
               }`}
             >
               {ATTACK_HINT[state.bossAttack] ?? ""}
