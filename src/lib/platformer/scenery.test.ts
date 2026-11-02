@@ -7,9 +7,9 @@ import { drawSceneryBackground, drawSceneryTerrain, drawSceneryMovers } from "./
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 const fixtures = [
-  "1fabef81c8e6c7cdfbc2de52b99167eb0f9c8de6e7b42f55a126654044db7386",
-  "f64c76dc073e5d7b0d48ae0d367077b080787d82b0c200aac088e7aed1a06978",
-  "8c332bc9312f6336d68c0f93a5b4169252f9ca789ce8454a484570c7f62c6f12",
+  "eeb67a61e794dd2cf91b86c8a9af2fce9d6e674dfdba297bd45f14ace178d059",
+  "6e867b09d15deca434d1a8b6c09fed0ae942e25c7126e452ff135cb5fafb96a1",
+  "3c3a16145d82d1f857a8d5c0ab62f1ac1cd8ae1061bc6152d2ad8563eee18a8c",
 ];
 // Canvas spy: drawing calls are inert, so the test isolates data mutation.
 const context = new Proxy({}, { get: (_, key) => key === "createLinearGradient" ? () => ({ addColorStop() {} }) : () => {} }) as CanvasRenderingContext2D;

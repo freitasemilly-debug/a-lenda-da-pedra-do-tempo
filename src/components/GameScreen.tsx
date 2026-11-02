@@ -274,7 +274,7 @@ export function GameScreen() {
                 <Button size="arcade" type="submit" disabled={!name.trim()} variant="arcade" className="title-btn title-btn-primary">
                   <span className="title-btn-arrow">▶</span><span>Continuar</span>
                 </Button>
-                <Button variant="ghost" size="arcade" type="button" onClick={() => setScreen("menu")} variant="arcadeSecondary" className="title-btn title-btn-secondary">Voltar</Button>
+                <Button size="arcade" type="button" onClick={() => setScreen("menu")} variant="arcadeSecondary" className="title-btn title-btn-secondary">Voltar</Button>
               </form>
             )}
             {overlay === "select" && (
@@ -285,8 +285,8 @@ export function GameScreen() {
                   <HeroCard id="luna" name="Luna" desc="Menina aventureira" selected={hero === "luna"} onPick={setHero} />
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-3">
-                  <Button variant="ghost" size="arcade" type="button" onClick={() => setScreen("name")} variant="arcadeSecondary" className="title-btn title-btn-secondary">Voltar</Button>
-                  <Button variant="ghost" size="arcade" type="button" disabled={!hero} onClick={() => setScreen("intro")} variant="arcade" className="title-btn title-btn-primary">
+                  <Button size="arcade" type="button" onClick={() => setScreen("name")} variant="arcadeSecondary" className="title-btn title-btn-secondary">Voltar</Button>
+                  <Button size="arcade" type="button" disabled={!hero} onClick={() => setScreen("intro")} variant="arcade" className="title-btn title-btn-primary">
                     <span className="title-btn-arrow">▶</span><span>Continuar</span>
                   </Button>
                 </div>
@@ -317,7 +317,7 @@ export function GameScreen() {
                     </div>
                   ))}
                 </div>
-                <Button variant="ghost" size="arcade" type="button" onClick={() => startGame(hero ?? "leo")} variant="arcade" className="title-btn title-btn-primary mt-1">
+                <Button size="arcade" type="button" onClick={() => startGame(hero ?? "leo")} variant="arcade" className="title-btn title-btn-primary mt-1">
                   <span className="title-btn-arrow">▶</span><span>Começar a aventura</span>
                 </Button>
               </div>
@@ -350,12 +350,12 @@ export function GameScreen() {
                     <p className="font-pixel text-[10px] uppercase text-foreground">Apagar todos os resultados?</p>
                     <p className="text-xs text-muted-foreground">Essa ação não pode ser desfeita.</p>
                     <div className="flex flex-wrap justify-center gap-3">
-                      <Button variant="ghost" size="arcade" type="button" onClick={() => setConfirmClearRanking(false)} variant="arcadeSecondary" className="title-btn title-btn-secondary">Cancelar</Button>
-                      <Button variant="ghost" size="arcade" type="button" onClick={() => { clearRanking(); setRanking([]); setConfirmClearRanking(false); }} variant="arcade" className="title-btn title-btn-primary">Confirmar</Button>
+                      <Button size="arcade" type="button" onClick={() => setConfirmClearRanking(false)} variant="arcadeSecondary" className="title-btn title-btn-secondary">Cancelar</Button>
+                      <Button size="arcade" type="button" onClick={() => { clearRanking(); setRanking([]); setConfirmClearRanking(false); }} variant="arcade" className="title-btn title-btn-primary">Confirmar</Button>
                     </div>
                   </div>
                 )}
-                <Button variant="ghost" size="arcade" type="button" onClick={() => { setConfirmClearRanking(false); setScreen("menu"); }} variant="arcadeSecondary" className="title-btn title-btn-secondary">Voltar</Button>
+                <Button size="arcade" type="button" onClick={() => { setConfirmClearRanking(false); setScreen("menu"); }} variant="arcadeSecondary" className="title-btn title-btn-secondary">Voltar</Button>
               </div>
             )}
           </TitleScreen>
