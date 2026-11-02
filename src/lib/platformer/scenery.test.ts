@@ -4,13 +4,20 @@ import { createHash } from "node:crypto";
 import { buildLevel, Game, TILE, ROWS } from "./engine";
 import baseline from "./simulation-baseline.json";
 import { drawSceneryBackground, drawSceneryTerrain, drawSceneryMovers } from "./scenery";
+import { paintEnemy, paintBoss } from "./villains";
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 const fixtures = [
+  "eeb67a61e794dd2cf91b86c8a9af2fce9d6e674dfdba297bd45f14ace178d059",
+  "6e867b09d15deca434d1a8b6c09fed0ae942e25c7126e452ff135cb5fafb96a1",
+  "3c3a16145d82d1f857a8d5c0ab62f1ac1cd8ae1061bc6152d2ad8563eee18a8c",
+];
+const originalWithoutQuestions = [
   "1fabef81c8e6c7cdfbc2de52b99167eb0f9c8de6e7b42f55a126654044db7386",
   "f64c76dc073e5d7b0d48ae0d367077b080787d82b0c200aac088e7aed1a06978",
   "8c332bc9312f6336d68c0f93a5b4169252f9ca789ce8454a484570c7f62c6f12",
 ];
+const previousQuestions = [[1756, 2249, 2440, 2625, 2933, 3007, 3118], [1555, 2040, 2229, 2266, 2303, 2792, 3277, 3318], [2102, 2139, 2400, 2622, 3999]];
 // Canvas spy: drawing calls are inert, so the test isolates data mutation.
 const context = new Proxy({}, { get: (_, key) => key === "createLinearGradient" ? () => ({ addColorStop() {} }) : () => {} }) as CanvasRenderingContext2D;
 const canvas = { getContext: () => context } as unknown as HTMLCanvasElement;
@@ -27,6 +34,36 @@ interface Harness {
 
 describe("Scenery preserves the existing game", () => {
   for (const world of [1, 2, 3]) {
+    test(`world ${world}: only existing question blocks move one tile upward`, () => {
+      const level = buildLevel(world);
+      const positions = [...level.grid].flatMap((tile, i) => tile === 4 ? [i] : []);
+      const previous = previousQuestions[world - 1] ?? [];
+      assert.deepEqual(positions, previous.map(i => i - level.cols).sort((a,b) => a-b));
+      for (const i of positions) level.grid[i] = 0;
+      assert.equal(hash(JSON.stringify(level)), originalWithoutQuestions[world - 1]);
+    });
+    test(`world ${world}: every raised block is reachable and awards its existing coin once`, () => {
+      const level = buildLevel(world);
+      for (const [index, tile] of level.grid.entries()) {
+        if (tile !== 4) continue;
+        const col = index % level.cols, row = Math.floor(index / level.cols);
+        assert.ok([1,2,3].includes(level.grid[(row+3)*level.cols+col] ?? 0));
+        const game = new Game(canvas, () => {}) as unknown as Harness & { coinsGot: number; score: number };
+        game.loadWorld(world, true);
+        game.p.x = col*TILE+4; game.p.y = (row+1)*TILE+1; game.p.vy = -12.42;
+        const groundTop = (row+3)*TILE;
+        assert.ok(groundTop - game.p.h - (row+1)*TILE < 100);
+        game.p.y -= 2;
+        game.collideY(game.p);
+        assert.equal(game.level.grid[index], 2);
+        assert.equal(game.coinsGot, 1);
+        assert.equal(game.score, 100);
+        game.p.y = (row+1)*TILE-1; game.p.vy=-1;
+        game.collideY(game.p);
+        assert.equal(game.coinsGot, 1);
+        assert.equal(game.score, 100);
+      }
+    });
     test(`world ${world}: all geometry, items, enemies, movers and exits match the original`, () => {
       assert.equal(hash(JSON.stringify(buildLevel(world))), fixtures[world - 1]);
     });
@@ -57,6 +94,8 @@ describe("Scenery preserves the existing game", () => {
           drawSceneryBackground(context, world, cam, 180);
           drawSceneryTerrain(context, level, world, cam);
           drawSceneryMovers(context, level.movers, world, cam);
+          for (const enemy of level.enemies) paintEnemy(context, enemy, cam);
+          if (level.boss) paintBoss(context, level.boss, cam, 180);
         }
         assert.equal(JSON.stringify(level), before);
       } finally {

@@ -10,3 +10,5 @@
 <!-- LOVABLE:END -->
 
 - Gameplay scenery painters live in `src/lib/platformer/scenery.ts`, read semantic CSS palettes, and must never mutate level or simulation data; this keeps visual upgrades independent of collisions and progression.
+- Enemy and boss painters live in `src/lib/platformer/villains.ts` and only read simulation state; decorative size never changes hitboxes or battle rules.
+- Opening and ending screens share `ArcadeTitle` and scoped opening tokens, keeping their styling independent of gameplay and ranking palettes.

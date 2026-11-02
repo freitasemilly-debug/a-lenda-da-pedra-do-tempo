@@ -1,4 +1,5 @@
 import { audio } from "./audio";
+import { paintEnemy, paintBoss } from "./villains";
 import { drawSceneryBackground, drawSceneryTerrain, drawSceneryMovers } from "./scenery";
 /* A Lenda da Pedra do Tempo — motor de plataforma 2D original (canvas, pixel art procedural) */
 
@@ -409,7 +410,9 @@ export function buildLevel(world: number): Level {
       const here = grid[surfaceY * cols + cx] ?? EMPTY;
       const clear = here === EMPTY && (grid[(surfaceY + 1) * cols + cx] ?? EMPTY) === EMPTY;
       if (clear && (below === GROUND || below === BRICK || below === PLATFORM)) {
-        set(cx, surfaceY, QUESTION);
+        const raisedY = surfaceY - 1;
+        const destination = grid[raisedY * cols + cx] ?? EMPTY;
+        set(cx, destination === EMPTY ? raisedY : surfaceY, QUESTION);
         break;
       }
     }
@@ -1412,150 +1415,16 @@ export class Game {
   }
 
   private drawEnemies(cam: number) {
-    const g = this.ctx;
-    for (const e of this.level.enemies) {
-      if (e.dead) continue;
-      const x = e.x - cam;
-      if (x < -60 || x > VW + 60) continue;
-      const y = e.y;
-      const wob = Math.sin(e.t * 2) * 2;
-      if (e.kind === "walker") {
-        // Criaturinha original de chapéu arredondado, inspirada em cogumelos de fantasia.
-        g.fillStyle = "rgba(25,18,32,0.22)";
-        g.fillRect(x + 4, y + 27, 20, 3);
-        g.fillStyle = "#f4d7b0";
-        g.fillRect(x + 7, y + 17 + wob, 14, 11);
-        g.fillStyle = "#c58a55";
-        g.fillRect(x + 4, y + 20 + wob, 5, 7);
-        g.fillRect(x + 19, y + 20 + wob, 5, 7);
-        g.fillStyle = "#d94b55";
-        g.fillRect(x + 3, y + 9 + wob, 22, 8);
-        g.fillRect(x + 7, y + 5 + wob, 14, 5);
-        g.fillStyle = "#ffdfb0";
-        g.fillRect(x + 1, y + 13 + wob, 26, 4);
-        g.fillStyle = "#fff1df";
-        g.fillRect(x + 7, y + 8 + wob, 5, 4);
-        g.fillRect(x + 18, y + 12 + wob, 4, 3);
-        g.fillStyle = "#302033";
-        g.fillRect(x + 10 + (e.vx > 0 ? 2 : 0), y + 19 + wob, 3, 4);
-        g.fillRect(x + 17 + (e.vx > 0 ? 2 : 0), y + 19 + wob, 3, 4);
-        g.fillStyle = "#7a493d";
-        g.fillRect(x + 6, y + 27, 7, 3);
-        g.fillRect(x + 16, y + 27, 7, 3);
-      } else if (e.kind === "chaser") {
-        g.fillStyle = "#e0573f";
-        g.fillRect(x + 1, y + 4, 26, 22);
-        g.fillStyle = "#ffd36b";
-        g.fillRect(x + 5, y + 9, 7, 7);
-        g.fillRect(x + 16, y + 9, 7, 7);
-        g.fillStyle = "#3a0f0a";
-        g.fillRect(x + 7, y + 11, 3, 4);
-        g.fillRect(x + 18, y + 11, 3, 4);
-        g.fillStyle = "#ffffff";
-        for (let i = 0; i < 4; i++) g.fillRect(x + 4 + i * 6, y + 21, 4, 4);
-        g.fillStyle = "#a63320";
-        g.fillRect(x + 2, y, 6, 6);
-        g.fillRect(x + 20, y, 6, 6);
-      } else {
-        g.fillStyle = "#2fae8f";
-        g.fillRect(x + 3, y + 3 + wob, 22, 22);
-        g.fillStyle = "#1c7c66";
-        g.fillRect(x + 3, y + 3 + wob, 22, 5);
-        g.fillStyle = "#e8fff7";
-        g.fillRect(x + 8, y + 12 + wob, 5, 5);
-        g.fillRect(x + 16, y + 12 + wob, 5, 5);
-        g.fillStyle = "#08322a";
-        g.fillRect(x + 9, y + 14 + wob, 3, 3);
-        g.fillRect(x + 17, y + 14 + wob, 3, 3);
-      }
+    for (const enemy of this.level.enemies) {
+      if (enemy.dead || enemy.x - cam < -60 || enemy.x - cam > VW + 60) continue;
+      paintEnemy(this.ctx, enemy, cam);
     }
   }
 
   private drawBoss(cam: number) {
-    const b = this.level.boss;
-    if (!b || b.defeated) return;
-    const g = this.ctx;
-    const x = b.x - cam;
-    if (x < -200 || x > VW + 200) return;
-    if (b.phase === "dying") {
-      g.globalAlpha = Math.max(0.15, b.dying / 90);
-    }
-    const vuln = b.phase === "vuln";
-    const shake = b.phase === "dying" ? (Math.random() - 0.5) * 6 : b.hurt > 30 ? (Math.random() - 0.5) * 8 : 0;
-    const flash = b.hurt > 0 && Math.floor(this.frame / 4) % 2 === 0;
-    g.font = "10px 'Press Start 2P', monospace";
-    g.textAlign = "center";
-    if (vuln) {
-      g.fillStyle = Math.floor(this.frame / 8) % 2 ? "rgba(255,215,94,0.5)" : "rgba(255,215,94,0.22)";
-      g.fillRect(x - 18, b.y - 18, b.w + 36, b.h + 36);
-      g.fillStyle = "#ffd75e";
-      g.fillText("VULNERÁVEL! APERTE X", x + b.w / 2, b.y - 26);
-    } else if (b.phase === "idle" && b.active && b.pt < 60 && b.pt > 0) {
-      // aviso antes do ataque
-      g.fillStyle = Math.floor(this.frame / 5) % 2 ? "#ff5f8d" : "#ffffff";
-      g.font = "20px 'Press Start 2P', monospace";
-      g.fillText("!", x + b.w / 2, b.y - 22);
-      g.fillStyle = "rgba(255,95,141,0.25)";
-      g.fillRect(x - 10, b.y - 10, b.w + 20, b.h + 20);
-    }
-    g.textAlign = "left";
-    g.save();
-    g.translate(shake, 0);
-    const glow = Math.sin(this.frame * 0.08) * 4;
-    g.fillStyle = "rgba(140,110,255,0.25)";
-    g.fillRect(x - 15, b.y - 14, b.w + 30, b.h + 28);
-    // Silhueta do Guardião: corpo robusto, ombreiras, chifres e coroa de cristal.
-    g.fillStyle = flash ? "#ffffff" : "#49345f";
-    g.fillRect(x + 4, b.y + 20, b.w - 8, b.h - 22);
-    g.fillStyle = flash ? "#ffffff" : "#76506f";
-    g.fillRect(x + 10, b.y + 5, b.w - 20, 35);
-    g.fillRect(x - 5, b.y + 30, 13, 26);
-    g.fillRect(x + b.w - 8, b.y + 30, 13, 26);
-    // chifres/coroa
-    g.fillStyle = "#d9b66e";
-    g.fillRect(x + 10, b.y + 2, 7, 12);
-    g.fillRect(x + b.w - 17, b.y + 2, 7, 12);
-    g.fillRect(x + 19, b.y - 5, 8, 10);
-    g.fillRect(x + b.w - 27, b.y - 5, 8, 10);
-    g.fillStyle = "#f2d58a";
-    g.fillRect(x + 21, b.y - 8, 5, 5);
-    g.fillRect(x + b.w - 26, b.y - 8, 5, 5);
-    // olhos brilhantes e sobrancelhas
-    g.fillStyle = "#f7cf67";
-    g.fillRect(x + 17, b.y + 17, 13, 9);
-    g.fillRect(x + b.w - 30, b.y + 17, 13, 9);
-    g.fillStyle = "#21182f";
-    g.fillRect(x + 21, b.y + 19, 5, 6);
-    g.fillRect(x + b.w - 26, b.y + 19, 5, 6);
-    g.fillRect(x + 15, b.y + 13, 16, 3);
-    g.fillRect(x + b.w - 31, b.y + 13, 16, 3);
-    // núcleo de tempo protegido por placas
-    g.fillStyle = "#1c294d";
-    g.fillRect(x + b.w / 2 - 15, b.y + 43 + glow * 0.2, 30, 25);
-    g.fillStyle = vuln ? "#fff2a6" : "#37d7f5";
-    g.fillRect(x + b.w / 2 - 9, b.y + 48 + glow * 0.2, 18, 15);
-    g.fillStyle = "#ffffff";
-    g.fillRect(x + b.w / 2 - 3, b.y + 51 + glow * 0.2, 6, 8);
-    // manoplas e botas
-    g.fillStyle = flash ? "#ffffff" : "#342642";
-    g.fillRect(x - 11, b.y + 50 + glow, 15, 16);
-    g.fillRect(x + b.w - 4, b.y + 50 - glow, 15, 16);
-    g.fillRect(x + 7, b.y + b.h - 8, 22, 8);
-    g.fillRect(x + b.w - 29, b.y + b.h - 8, 22, 8);
-    g.fillStyle = "#d9b66e";
-    g.fillRect(x + 9, b.y + b.h - 8, 18, 3);
-    g.fillRect(x + b.w - 27, b.y + b.h - 8, 18, 3);
-    if (vuln) {
-      // olhos fechados/tontos
-      g.fillStyle = "#2b1a4a";
-      g.fillRect(x + 18, b.y + 10, 12, 10);
-      g.fillRect(x + 46, b.y + 10, 12, 10);
-      g.fillStyle = "#ffd75e";
-      g.fillRect(x + 18, b.y + 14, 12, 3);
-      g.fillRect(x + 46, b.y + 14, 12, 3);
-    }
-    g.restore();
-    g.globalAlpha = 1;
+    const boss = this.level.boss;
+    if (!boss || boss.defeated || boss.x - cam < -200 || boss.x - cam > VW + 200) return;
+    paintBoss(this.ctx, boss, cam, this.frame);
   }
 
   private drawGoal(cam: number) {
