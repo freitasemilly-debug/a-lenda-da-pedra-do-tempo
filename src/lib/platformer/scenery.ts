@@ -53,6 +53,12 @@ function canopy(g: CanvasRenderingContext2D, p: Palette, x: number, y: number, s
   g.globalAlpha = .23;
   block(g, p.light, x - size * .4, y + 3, size * .55, 5);
   block(g, p.leaf, x - size * .54, y + size * .2, size * .65, 6);
+  g.globalAlpha = .3;
+  for (let i = 0; i < 9; i++) {
+    const px = x - size * .45 + noise(i, Math.round(x)) * size * .9;
+    const py = y + 10 + noise(i, Math.round(y)) * size * .45;
+    block(g, p.cap, px, py, 6, 3);
+  }
   g.globalAlpha = 1;
 }
 
@@ -67,6 +73,34 @@ export function drawSceneryBackground(g: CanvasRenderingContext2D, world: number
   if (world === 1) forest(g, p, cam, frame);
   else if (world === 2) cavern(g, p, cam, frame);
   else castle(g, p, cam, frame);
+  // Richer world-specific details stay on background planes, behind the path.
+  for (let i = -1; i < 7; i++) {
+    const x = i * 180 - cam * .32 % 180;
+    const id = i + Math.floor(cam * .32 / 180);
+    if (world === 1) {
+      g.globalAlpha = .65;
+      block(g, p.near, x+24, 345, 45, 70);
+      block(g, p.rock, x+28, 350, 6, 58);
+      block(g, p.mid, x+17, 340, 58, 9);
+      for (let k=0;k<5;k++) block(g,p.mortar,x+24,362+k*10,45,2);
+      canopy(g,p,x+30,328,46,p.leaf);
+    } else if (world === 2) {
+      g.globalAlpha = .8;
+      crystal(g,p,x+80,390,65+noise(id,22)*65,25);
+      crystal(g,p,x+102,403,43,19);
+      g.globalAlpha = .25;
+      block(g,p.glow,x+61,408,69,3);
+    } else {
+      g.globalAlpha = .7;
+      block(g,p.metal,x+90,100,3,108);
+      block(g,p.shade,x+53,197,77,34);
+      block(g,p.metal,x+57,199,69,5);
+      block(g,p.glow,x+76,207,28,10);
+      block(g,p.light,x+83,209,5,5);
+      for (let k=0;k<3;k++) block(g,p.rock,x+61+k*21,231,6,14);
+    }
+  }
+  g.globalAlpha = 1;
   // Fine ambient motes stay behind every playable object.
   for (let i = 0; i < 26; i++) {
     const x = ((noise(i, world) * 1800 - cam * .18 + frame * .055) % 1100 + 1100) % 1100 - 70;
@@ -308,14 +342,14 @@ export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLe
       }
     } else if (t === 4) {
       // Bloco surpresa: o desenho é apenas visual; a colisão usa o mesmo tile de 32px.
-      block(g, "#9a5b22", x, y, TILE, TILE);
-      block(g, "#f5b83d", x + 2, y + 2, TILE - 4, TILE - 4);
-      block(g, "#ffe28a", x + 4, y + 4, TILE - 8, 4);
-      block(g, "#c77b25", x + 4, y + 26, TILE - 8, 3);
-      block(g, "#fff2b0", x + 13, y + 7, 6, 4);
-      block(g, "#fff2b0", x + 17, y + 11, 5, 7);
-      block(g, "#fff2b0", x + 13, y + 18, 6, 4);
-      block(g, "#fff2b0", x + 13, y + 24, 5, 3);
+      block(g, p.shade, x, y, TILE, TILE);
+      block(g, p.flower, x + 2, y + 2, TILE - 4, TILE - 4);
+      block(g, p.light, x + 4, y + 4, TILE - 8, 4);
+      block(g, p.soil, x + 4, y + 26, TILE - 8, 3);
+      block(g, p.light, x + 13, y + 7, 6, 4);
+      block(g, p.light, x + 17, y + 11, 5, 7);
+      block(g, p.light, x + 13, y + 18, 6, 4);
+      block(g, p.light, x + 13, y + 24, 5, 3);
     } else {
       // The original floating tile is painted 14px tall; its collider is unchanged.
       block(g, p.edge, x, y, TILE, 14);
