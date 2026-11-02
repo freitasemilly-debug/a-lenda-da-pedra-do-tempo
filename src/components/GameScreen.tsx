@@ -3,6 +3,8 @@ import { Game, VH, VW, paintHero, type GameState, type Hero } from "@/lib/platfo
 import { addRanking, clearRanking, loadRanking, type RankEntry } from "@/lib/platformer/ranking";
 import { TitleScreen } from "./TitleScreen";
 import { audio } from "@/lib/platformer/audio";
+import { Button } from "@/components/ui/button";
+import { ArcadeTitle, VictoryStars } from "./ArcadeTitle";
 
 const initial: GameState = {
   score: 0,
@@ -48,7 +50,7 @@ export function GameScreen() {
   const recorded = useRef(false);
   const lastHero = useRef<Hero>("leo");
 
-  const [snd, setSnd] = useState(audio.settings);
+  const [snd, setSnd] = useState({ enabled: true, music: 0.6, sfx: 0.8 });
   const [sndOpen, setSndOpen] = useState(false);
   useEffect(() => {
     setSnd(audio.settings);
@@ -150,43 +152,34 @@ export function GameScreen() {
           <Stat label="Fragmentos" value={`${state.fragments}/${state.fragmentsTotal}`} accent="shard" />
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-background/40 px-2 py-1">
-            <span className="font-pixel text-[8px] uppercase tracking-widest text-muted-foreground">Vidas</span>
-            <div className="flex items-center gap-1" aria-label={`${state.lives} vidas restantes`}>
-              {[0, 1, 2].map((i) => (
-                <span key={i} className={`text-lg leading-none drop-shadow-sm ${i < state.lives ? "text-rose-500" : "text-muted-foreground/35"}`} aria-hidden>♥</span>
-              ))}
-              <span className="ml-1 font-pixel text-[9px] tabular-nums text-foreground">{state.lives}/3</span>
-            </div>
-          </div>
           <span className="font-pixel text-[9px] uppercase tracking-widest text-accent">
             Mundo {state.world} · {state.worldName}
           </span>
-          <button
+          <Button variant="ghost" size="arcade"
             type="button"
             onClick={() => gameRef.current?.togglePause()}
             className="rounded-lg border-2 border-border bg-secondary px-3 py-1 font-pixel text-[9px] uppercase text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             {state.status === "paused" ? "Continuar" : "Pausa"}
-          </button>
+          </Button>
 <div className="relative">
-            <button
+            <Button variant="ghost" size="arcade"
               type="button"
               onClick={() => setSndOpen((v) => !v)}
               aria-expanded={sndOpen}
               className="rounded-lg border-2 border-border bg-secondary px-3 py-1 font-pixel text-[9px] uppercase text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             >
               {snd.enabled ? "Som" : "Mudo"}
-            </button>
+            </Button>
             {sndOpen && (
               <div className="absolute right-0 top-full z-20 mt-2 flex w-56 flex-col gap-3 rounded-xl border-2 border-border bg-card p-3 shadow-[var(--shadow-panel)]">
-                <button
+                <Button variant="ghost" size="arcade"
                   type="button"
                   onClick={() => audio.set({ enabled: !snd.enabled })}
                   className="rounded-lg border-2 border-border bg-secondary px-3 py-1 font-pixel text-[9px] uppercase text-secondary-foreground hover:bg-accent hover:text-accent-foreground"
                 >
                   Áudio: {snd.enabled ? "ligado" : "desligado"}
-                </button>
+                </Button>
                 <label className="flex flex-col gap-1 font-pixel text-[8px] uppercase text-muted-foreground">
                   Música {Math.round(snd.music * 100)}%
                   <input type="range" min={0} max={1} step={0.05} value={snd.music}
@@ -212,6 +205,13 @@ export function GameScreen() {
           className="block w-full [image-rendering:pixelated]"
           style={{ aspectRatio: `${VW} / ${VH}` }}
         />
+
+        {!overlay && <div className="map-hearts" role="img" aria-label={`${state.lives} vidas restantes`}>
+          {[0, 1, 2].map(i => <svg key={i} viewBox="0 0 16 14" className={i < state.lives ? "heart-full" : "heart-empty"} aria-hidden>
+            <path d="M2 0h4v2h4V0h4v2h2v6h-2v2h-2v2h-2v2H6v-2H4v-2H2V8H0V2h2Z" />
+            <path className="heart-shine" d="M3 3h3v2H3z" />
+          </svg>)}
+        </div>}
 
         {state.status === "playing" && state.world === 3 && state.bossHp > 0 && state.bossAttack && (
           <div className="pointer-events-none absolute left-1/2 top-3 w-72 -translate-x-1/2">
@@ -248,7 +248,7 @@ export function GameScreen() {
           <TitleScreen onPlay={() => setScreen("name")} onRanking={openRanking} />
         )}
         {(overlay === "name" || overlay === "select" || overlay === "intro" || overlay === "ranking") && (
-          <TitleScreen onPlay={() => {}} onRanking={() => {}}>
+          <TitleScreen onPlay={() => {}} onRanking={() => {}} classic={overlay === "ranking"}>
             {overlay === "name" && (
               <form
                 className="tpanel flex w-full max-w-sm flex-col items-center gap-5"
@@ -262,6 +262,7 @@ export function GameScreen() {
               >
                 <ScreenTitle kicker="Jogador">DIGITE SEU NOME</ScreenTitle>
                 <input
+                  aria-label="Seu nome"
                   autoFocus
                   value={name}
                   maxLength={14}
@@ -270,10 +271,10 @@ export function GameScreen() {
                   placeholder="Seu nome"
                   className="title-input"
                 />
-                <button type="submit" disabled={!name.trim()} className="title-btn title-btn-primary">
+                <Button size="arcade" type="submit" disabled={!name.trim()} variant="arcade" className="title-btn title-btn-primary">
                   <span className="title-btn-arrow">▶</span><span>Continuar</span>
-                </button>
-                <button type="button" onClick={() => setScreen("menu")} className="title-btn title-btn-secondary">Voltar</button>
+                </Button>
+                <Button variant="ghost" size="arcade" type="button" onClick={() => setScreen("menu")} variant="arcadeSecondary" className="title-btn title-btn-secondary">Voltar</Button>
               </form>
             )}
             {overlay === "select" && (
@@ -284,10 +285,10 @@ export function GameScreen() {
                   <HeroCard id="luna" name="Luna" desc="Menina aventureira" selected={hero === "luna"} onPick={setHero} />
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-3">
-                  <button type="button" onClick={() => setScreen("name")} className="title-btn title-btn-secondary">Voltar</button>
-                  <button type="button" disabled={!hero} onClick={() => setScreen("intro")} className="title-btn title-btn-primary">
+                  <Button variant="ghost" size="arcade" type="button" onClick={() => setScreen("name")} variant="arcadeSecondary" className="title-btn title-btn-secondary">Voltar</Button>
+                  <Button variant="ghost" size="arcade" type="button" disabled={!hero} onClick={() => setScreen("intro")} variant="arcade" className="title-btn title-btn-primary">
                     <span className="title-btn-arrow">▶</span><span>Continuar</span>
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -316,9 +317,9 @@ export function GameScreen() {
                     </div>
                   ))}
                 </div>
-                <button type="button" onClick={() => startGame(hero ?? "leo")} className="title-btn title-btn-primary mt-1">
+                <Button variant="ghost" size="arcade" type="button" onClick={() => startGame(hero ?? "leo")} variant="arcade" className="title-btn title-btn-primary mt-1">
                   <span className="title-btn-arrow">▶</span><span>Começar a aventura</span>
-                </button>
+                </Button>
               </div>
             )}
             {overlay === "ranking" && (
@@ -340,31 +341,31 @@ export function GameScreen() {
                   </ol>
                 )}
                 {!confirmClearRanking ? (
-                  <button type="button" onClick={() => setConfirmClearRanking(true)} disabled={ranking.length === 0}
+                  <Button variant="ghost" size="arcade" type="button" onClick={() => setConfirmClearRanking(true)} disabled={ranking.length === 0}
                     className="rounded-lg border-2 border-rose-400/70 bg-rose-500/15 px-4 py-2 font-pixel text-[9px] uppercase text-rose-200 transition hover:bg-rose-500/30 disabled:cursor-not-allowed disabled:opacity-40">
                     Limpar ranking
-                  </button>
+                  </Button>
                 ) : (
                   <div className="tpanel flex w-full flex-col items-center gap-3">
                     <p className="font-pixel text-[10px] uppercase text-foreground">Apagar todos os resultados?</p>
                     <p className="text-xs text-muted-foreground">Essa ação não pode ser desfeita.</p>
                     <div className="flex flex-wrap justify-center gap-3">
-                      <button type="button" onClick={() => setConfirmClearRanking(false)} className="title-btn title-btn-secondary">Cancelar</button>
-                      <button type="button" onClick={() => { clearRanking(); setRanking([]); setConfirmClearRanking(false); }} className="title-btn title-btn-primary">Confirmar</button>
+                      <Button variant="ghost" size="arcade" type="button" onClick={() => setConfirmClearRanking(false)} variant="arcadeSecondary" className="title-btn title-btn-secondary">Cancelar</Button>
+                      <Button variant="ghost" size="arcade" type="button" onClick={() => { clearRanking(); setRanking([]); setConfirmClearRanking(false); }} variant="arcade" className="title-btn title-btn-primary">Confirmar</Button>
                     </div>
                   </div>
                 )}
-                <button type="button" onClick={() => { setConfirmClearRanking(false); setScreen("menu"); }} className="title-btn title-btn-secondary">Voltar</button>
+                <Button variant="ghost" size="arcade" type="button" onClick={() => { setConfirmClearRanking(false); setScreen("menu"); }} variant="arcadeSecondary" className="title-btn title-btn-secondary">Voltar</Button>
               </div>
             )}
           </TitleScreen>
         )}
         {overlay && !["menu", "name", "select", "intro", "ranking"].includes(overlay) && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 overflow-y-auto bg-[color-mix(in_oklab,var(--background)_86%,transparent)] px-6 py-4 text-center backdrop-blur-sm">
+          <div className={`absolute inset-0 flex flex-col items-center justify-center gap-4 overflow-y-auto px-6 py-4 text-center ${overlay === "paused" ? "bg-background/90 backdrop-blur-sm" : "opening-screen ending-screen"}`}>
 
             {overlay === "gameover" && (
               <>
-                <h2 className="font-pixel text-xl text-destructive">FIM DE JOGO</h2>
+                <ArcadeTitle>GAME OVER</ArcadeTitle>
                 <p className="font-pixel text-sm uppercase text-foreground">{name}</p>
                 <p className="font-pixel text-xs uppercase text-muted-foreground">
                   Pontuação: <span className="text-chart-4">{state.score}</span>
@@ -385,9 +386,9 @@ export function GameScreen() {
             )}
             {overlay === "win" && (
               <>
-                <h2 className="font-pixel text-lg leading-relaxed text-accent sm:text-xl">
-                  VOCÊ RECUPEROU A PEDRA DO TEMPO!
-                </h2>
+                <VictoryStars />
+                <ArcadeTitle className="ending-title">THANK YOU FOR PLAYING!</ArcadeTitle>
+                <p className="ending-translation">(Obrigado por jogar!)</p>
                 <p className="font-pixel text-sm uppercase text-foreground">{name}</p>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-left font-pixel text-[10px] uppercase text-muted-foreground">
                   <span>Pontuação</span><span className="text-foreground">{state.score}</span>
@@ -458,7 +459,7 @@ function TouchBtn({
   ...rest
 }: React.ComponentProps<"button"> & { wide?: boolean }) {
   return (
-    <button
+    <Button variant="ghost" size="arcade"
       type="button"
       {...rest}
       className={`select-none rounded-2xl border-4 border-border bg-secondary font-pixel text-sm text-secondary-foreground active:bg-accent active:text-accent-foreground ${
@@ -467,7 +468,7 @@ function TouchBtn({
       style={{ touchAction: "none" }}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -511,7 +512,7 @@ function HeroCard({
     return () => cancelAnimationFrame(raf);
   }, [id, selected]);
   return (
-    <button
+    <Button variant="ghost" size="arcade"
       type="button"
       onClick={() => onPick(id)}
       aria-pressed={selected}
@@ -521,31 +522,31 @@ function HeroCard({
       <span className="font-pixel text-xs uppercase text-foreground">{name}</span>
       <span className="text-[11px] text-title-stone">{desc}</span>
       {selected && <span className="font-pixel text-[8px] uppercase tracking-widest text-title-cyan">◆ Selecionado</span>}
-    </button>
+    </Button>
   );
 }
 
 function MenuBtn({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
   return (
-    <button
+    <Button variant="ghost" size="arcade"
       type="button"
       onClick={onClick}
       className="rounded-xl border-4 border-border bg-secondary px-6 py-3 font-pixel text-xs uppercase text-secondary-foreground transition-transform hover:scale-105 active:scale-95"
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
 function PrimaryBtn({ children, className, ...rest }: React.ComponentProps<"button">) {
   return (
-    <button
+    <Button variant="ghost" size="arcade"
       type="button"
       {...rest}
       className={`rounded-xl border-4 border-border bg-primary px-8 py-3 font-pixel text-xs uppercase text-primary-foreground transition-transform hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100 ${className ?? ""}`}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -553,7 +554,7 @@ function ScreenTitle({ kicker, children }: { kicker: string; children: React.Rea
   return (
     <div className="flex flex-col items-center gap-2">
       <p className="font-pixel text-[8px] uppercase tracking-[0.5em] text-title-cyan/80 sm:text-[10px]">◆ {kicker} ◆</p>
-      <h2 className="title-glow font-pixel text-base leading-relaxed sm:text-2xl">{children}</h2>
+      <ArcadeTitle className="step-title">{String(children)}</ArcadeTitle>
       <span className="h-px w-40 bg-gradient-to-r from-transparent via-title-stone to-transparent sm:w-64" />
     </div>
   );
