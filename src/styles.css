@@ -327,3 +327,102 @@
   opacity: 1; transform: scale(1.06); border-color: var(--title-cyan);
   box-shadow: 0 0 28px color-mix(in oklab, var(--title-cyan) 55%, transparent), inset 0 0 20px color-mix(in oklab, var(--title-cyan) 22%, transparent);
 }
+
+/* Original, paper-white arcade identity; gameplay and ranking keep their palettes. */
+:root {
+  --opening-paper: oklch(1 0 0);
+  --opening-ink: oklch(0.19 0.015 265);
+  --opening-blue: oklch(0.58 0.2 255);
+  --opening-cyan: oklch(0.78 0.13 207);
+  --opening-red: oklch(0.66 0.22 25);
+  --opening-yellow: oklch(0.88 0.17 91);
+  --opening-green: oklch(0.72 0.18 145);
+  --opening-pink: oklch(0.72 0.2 345);
+  --opening-soft: oklch(0.96 0.015 240);
+  --opening-shadow: 0 5px 0 var(--opening-ink), 0 9px 12px color-mix(in oklab, var(--opening-ink) 12%, transparent);
+  --enemy-dark: oklch(0.25 0.025 280);
+  --enemy-red: oklch(0.63 0.2 28);
+  --enemy-red-light: oklch(0.77 0.15 45);
+  --enemy-green: oklch(0.62 0.14 161);
+  --enemy-green-light: oklch(0.83 0.1 157);
+  --enemy-gold: oklch(0.84 0.16 83);
+  --enemy-light: oklch(0.97 0.015 95);
+  --boss-armor: oklch(0.5 0.16 260);
+  --boss-plate: oklch(0.67 0.17 255);
+  --boss-cape: oklch(0.55 0.2 20);
+  --boss-shadow: oklch(0.3 0.09 270);
+}
+.opening-screen:not(.opening-ranking) {
+  --foreground: var(--opening-ink);
+  --muted-foreground: oklch(0.47 0.035 260);
+  --title-cyan: var(--opening-blue);
+  --title-stone: var(--opening-green);
+  --title-stone-core: var(--opening-paper);
+  --chart-4: var(--opening-blue);
+  --accent: var(--opening-blue);
+  position: absolute; inset: 0; background: var(--opening-paper); color: var(--opening-ink);
+}
+.opening-ranking { position: absolute; inset: 0; background: var(--title-sky-1); }
+.opening-menu { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 20px 28px; }
+.opening-content { height: 100%; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: safe center; padding: 22px; text-align: center; }
+.opening-scene { width: min(480px, 75%); height: auto; aspect-ratio: 8 / 3; image-rendering: pixelated; flex-shrink: 0; }
+.opening-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; padding-bottom: 8px; }
+.arcade-title { font-family: var(--font-sans); font-weight: 900; font-size: 46px; line-height: 1.16; letter-spacing: 0; margin: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.1em 0.28em; isolation: isolate; }
+.arcade-word { display: inline-flex; white-space: nowrap; }
+.arcade-letter { display: inline-block; paint-order: stroke fill; -webkit-text-stroke: 5px var(--opening-ink); text-shadow: 0 5px 0 var(--opening-ink); }
+.arcade-letter:nth-child(3n+1) { transform: rotate(-5deg) translateY(-1px); }
+.arcade-letter:nth-child(3n+2) { transform: rotate(4deg) translateY(2px); }
+.arcade-color-0 { color: var(--opening-red); }
+.arcade-color-1 { color: var(--opening-yellow); }
+.arcade-color-2 { color: var(--opening-blue); }
+.arcade-color-3 { color: var(--opening-green); }
+.arcade-color-4 { color: var(--opening-pink); }
+.opening-title { max-width: 620px; font-size: 46px; }
+.opening-title .arcade-word:nth-child(4), .opening-title .arcade-word:nth-child(6) { font-size: 1.15em; }
+.step-title { font-size: 30px; }
+.step-title .arcade-letter { -webkit-text-stroke-width: 3px; text-shadow: 0 3px 0 var(--opening-ink); }
+.opening-screen:not(.opening-ranking) .title-btn {
+  height: auto; min-height: 44px; min-width: 160px; max-width: 100%; padding: 14px 22px; border: 3px solid var(--opening-ink); border-radius: 8px; clip-path: none;
+  font-size: 11px; line-height: 1.6; white-space: normal; letter-spacing: 0; color: var(--opening-ink); box-shadow: var(--opening-shadow); background: var(--opening-yellow); text-shadow: 0 1px 0 color-mix(in oklab, var(--opening-paper) 60%, transparent);
+}
+.opening-screen:not(.opening-ranking) .title-btn-secondary { background: var(--opening-cyan); }
+.opening-screen:not(.opening-ranking) .title-btn:hover { transform: translateY(-3px); filter: brightness(1.04); }
+.opening-screen:not(.opening-ranking) .title-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--opening-ink); }
+.opening-screen:not(.opening-ranking) .title-input { color: var(--opening-ink); background: var(--opening-paper); border: 3px solid var(--opening-blue); box-shadow: 0 4px 0 color-mix(in oklab, var(--opening-blue) 25%, var(--opening-paper)); letter-spacing: 0; }
+.opening-screen:not(.opening-ranking) .title-input::placeholder { color: var(--muted-foreground); }
+.opening-screen:not(.opening-ranking) .title-input:focus { outline: 3px solid var(--opening-yellow); outline-offset: 3px; }
+.opening-screen:not(.opening-ranking) .tpanel { background: transparent; box-shadow: none; border: 0; padding: 8px 12px; backdrop-filter: none; }
+.opening-screen:not(.opening-ranking) .tchip { background: var(--opening-soft); border: 1px solid color-mix(in oklab, var(--opening-blue) 25%, var(--opening-paper)); }
+.opening-screen:not(.opening-ranking) .tchip-icon { background: var(--opening-yellow); color: var(--opening-ink); }
+.opening-screen:not(.opening-ranking) .tcard { background: var(--opening-soft); border: 3px solid color-mix(in oklab, var(--opening-blue) 40%, var(--opening-paper)); width: 170px; min-height: 218px; padding: 12px; opacity: 1; border-radius: 8px; position: relative; }
+.opening-screen:not(.opening-ranking) .tcard-on { background: color-mix(in oklab, var(--opening-yellow) 25%, var(--opening-paper)); border-color: var(--opening-ink); box-shadow: 0 5px 0 var(--opening-blue); transform: translateY(-3px); }
+.opening-screen:not(.opening-ranking) .tcard > span:last-child { min-height: 13px; }
+.ending-screen .arcade-title { max-width: 700px; }
+.ending-screen .title-btn { min-width: 200px; }
+.ending-translation { color: var(--opening-blue); font-size: 18px; font-weight: 600; }
+.victory-stars { display: flex; justify-content: center; gap: 10px; font-size: 22px; }
+.victory-stars span { animation: victory-twinkle 2s ease-in-out infinite alternate; }
+.victory-stars span:nth-child(2n) { animation-delay: -.8s; font-size: 16px; }
+@keyframes victory-twinkle { to { transform: translateY(-5px) rotate(12deg); opacity: .55; } }
+.map-hearts { position: absolute; left: 14px; top: 12px; display: flex; gap: 7px; padding: 7px 9px; border-radius: 6px; background: color-mix(in oklab, var(--enemy-dark) 65%, transparent); pointer-events: none; }
+.map-hearts svg { width: 25px; height: 22px; filter: drop-shadow(0 2px 0 var(--enemy-dark)); }
+.heart-full { fill: var(--opening-red); }
+.heart-empty { fill: color-mix(in oklab, var(--enemy-light) 22%, var(--enemy-dark)); }
+.heart-shine { fill: var(--enemy-light); opacity: .7; }
+@media (max-width: 639px) {
+  .opening-menu { padding: 12px; gap: 12px; }
+  .opening-title { font-size: 27px; max-width: 380px; }
+  .arcade-letter { -webkit-text-stroke-width: 3px; text-shadow: 0 3px 0 var(--opening-ink); }
+  .opening-scene { width: min(360px, 90%); }
+  .opening-actions { gap: 10px; }
+  .opening-screen:not(.opening-ranking) .title-btn { min-width: 130px; padding: 10px 12px; font-size: 9px; }
+  .opening-content { padding: 16px 12px; }
+  .step-title { font-size: 23px; }
+  .opening-screen:not(.opening-ranking) .tcard { width: 132px; min-height: 184px; padding: 10px; }
+  .ending-title { font-size: 29px; }
+  .ending-screen .arcade-title { font-size: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .victory-stars span, .title-led, .title-glow { animation: none; }
+  .title-btn, .tcard { transition: none; }
+}
