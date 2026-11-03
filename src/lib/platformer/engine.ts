@@ -13,6 +13,7 @@ export const GROUND = 1;
 export const BRICK = 2;
 export const PLATFORM = 3;
 export const QUESTION = 4;
+export const USED = 5;
 
 export type Status = "ready" | "playing" | "dead" | "levelclear" | "gameover" | "win" | "paused";
 
@@ -403,8 +404,10 @@ export function buildLevel(world: number): Level {
     goalY = (top - 5) * TILE;
   }
 
-  // Blocos-surpresa: posicionados acima de superfícies já existentes, sem alterar plataformas ou colisões do cenário.
+  // Blocos-surpresa: acima de superfícies existentes, longe de espinhos e sem estreitar corredores,
+  // para nunca bloquear a passagem (problema observado no mapa 2).
   for (let cx = 18; cx < cols - 12; cx += 37) {
+    if (spikes.some((s) => Math.abs(s.x / TILE - cx) < 5)) continue;
     for (let surfaceY = 5; surfaceY < ROWS - 2; surfaceY++) {
       const below = grid[(surfaceY + 2) * cols + cx] ?? EMPTY;
       const here = grid[surfaceY * cols + cx] ?? EMPTY;
@@ -412,7 +415,10 @@ export function buildLevel(world: number): Level {
       if (clear && (below === GROUND || below === BRICK || below === PLATFORM)) {
         const raisedY = surfaceY - 1;
         const destination = grid[raisedY * cols + cx] ?? EMPTY;
-        set(cx, destination === EMPTY ? raisedY : surfaceY, QUESTION);
+        const blockY = destination === EMPTY ? raisedY : surfaceY;
+        const sideClear =
+          (grid[blockY * cols + cx - 1] ?? EMPTY) === EMPTY && (grid[blockY * cols + cx + 1] ?? EMPTY) === EMPTY;
+        if (sideClear) set(cx, blockY, QUESTION);
         break;
       }
     }
@@ -682,7 +688,7 @@ export class Game {
 
   private solidAt(px: number, py: number) {
     const t = this.tileAt(Math.floor(px / TILE), Math.floor(py / TILE));
-    return t === GROUND || t === BRICK || t === PLATFORM || t === QUESTION;
+    return t === GROUND || t === BRICK || t === PLATFORM || t === QUESTION || t === USED;
   }
 
   private collideX(o: { x: number; y: number; w: number; h: number; vx: number }) {
@@ -720,11 +726,12 @@ export class Game {
           const cy = Math.floor(head / TILE);
           const hitTile = this.tileAt(cx, cy);
           if (hitTile === QUESTION && o === this.p) {
-            this.level.grid[cy * this.level.cols + cx] = BRICK;
-            this.coinsGot++;
-            this.score += 100;
+            // bloco usado: vira USED, salta uma moeda coletável e faz a animação de solavanco
+            this.level.grid[cy * this.level.cols + cx] = USED;
+            this.bumps.push({ cx, cy, t: 12 });
+            this.popCoins.push({ x: cx * TILE + TILE / 2, y: cy * TILE - 10, vy: -8.6, land: cy * TILE - 10 });
             this.sfx.coin();
-            this.burst(cx * TILE + TILE / 2, cy * TILE, "#ffd75e", 12, 2.5);
+            this.burst(cx * TILE + TILE / 2, cy * TILE, "#ffd75e", 8, 2);
             this.emit();
           }
           o.y = (cy + 1) * TILE + 0.01;
