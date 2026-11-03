@@ -1555,63 +1555,95 @@ export interface HeroPose {
 /** Desenha Léo ou Luna (24x34). Só a aparência muda entre os dois. */
 export function paintHero(g: CanvasRenderingContext2D, x: number, y: number, hero: Hero, o: HeroPose) {
   const c = HERO_PAL[hero];
+  const ink = "#262033";
+  const r = (color: string, a: number, b: number, w: number, h: number) => {
+    g.fillStyle = color;
+    g.fillRect(x + a, y + b, w, h);
+  };
   const step = o.running ? Math.floor(o.anim * 3) % 4 : 0;
   const legA = o.running ? [0, 3, 0, -3][step]! : 0;
   const f = o.face;
+  const tunic = o.hurt ? "#ff9b9b" : c.tunic;
+  // sombra no chão
   g.fillStyle = "rgba(0,0,0,0.18)";
   g.fillRect(x + 2, y + 32, 20, 4);
-  // cabelo longo da Luna (atrás)
+  // cabelo longo da Luna (atrás do corpo), balançando devagar
   if (hero === "luna") {
-    g.fillStyle = c.hair;
-    const sway = Math.sin(o.frame * 0.2) * 2;
-    g.fillRect(f > 0 ? x - 4 : x + 20, y + 3 + sway, 8, 16);
+    const sway = Math.round(Math.sin(o.frame * 0.2) * 2);
+    r(ink, f > 0 ? -5 : 19, 2 + sway, 10, 18);
+    r(c.hair, f > 0 ? -4 : 20, 3 + sway, 8, 16);
+    r(c.hairDark, f > 0 ? -4 : 20, 15 + sway, 8, 4);
   }
-  g.fillStyle = c.legs;
-  if (o.air) {
-    g.fillRect(x + 3, y + 26, 8, 8);
-    g.fillRect(x + 13, y + 24, 8, 8);
-  } else {
-    g.fillRect(x + 3 + legA, y + 26, 8, 8);
-    g.fillRect(x + 13 - legA, y + 26, 8, 8);
-  }
-  g.fillStyle = c.boots;
-  g.fillRect(x + 2 + legA, y + 32, 10, 3);
-  g.fillRect(x + 12 - legA, y + 32, 10, 3);
-  g.fillStyle = o.hurt ? "#ff9b9b" : c.tunic;
-  g.fillRect(x + 2, y + 14, 20, 13);
-  g.fillStyle = c.tunicDark;
-  if (hero === "luna") g.fillRect(x, y + 23, 24, 5);
-  else g.fillRect(x + 2, y + 23, 20, 4);
-  g.fillStyle = "#6b4426";
-  g.fillRect(x + 2, y + 21, 20, 3);
-  g.fillStyle = "#37d7f5";
-  g.fillRect(x + 10, y + 20, 5, 5);
-  g.fillStyle = c.tunic;
-  const armY = o.air ? y + 12 : y + 16 + (o.running ? [0, -2, 0, 2][step]! : 0);
-  g.fillRect(f > 0 ? x + 20 : x - 2, armY, 5, 10);
-  g.fillStyle = c.hand;
-  g.fillRect(f > 0 ? x + 20 : x - 2, armY + 9, 5, 4);
-  g.fillStyle = c.skin;
-  g.fillRect(x + 3, y + 2, 18, 13);
-  g.fillStyle = c.hair;
-  g.fillRect(x + 2, y, 20, 5);
-  g.fillRect(f > 0 ? x + 2 : x + 17, y + 2, 5, 6);
+  // pernas e botas com contorno
+  const legY = o.air ? [25, 23] : [26, 26];
+  const offA = o.air ? 0 : legA;
+  const offB = o.air ? 0 : -legA;
+  r(ink, 2 + offA, legY[0]! - 1, 10, 9);
+  r(ink, 12 + offB, legY[1]! - 1, 10, 9);
+  r(c.legs, 3 + offA, legY[0]!, 8, 7);
+  r(c.legs, 13 + offB, legY[1]!, 8, 7);
+  r(ink, 1 + offA, 31, 12, 4);
+  r(ink, 11 + offB, 31, 12, 4);
+  r(c.boots, 2 + offA, 32, 10, 2);
+  r(c.boots, 12 + offB, 32, 10, 2);
+  r("#ffffff", 3 + offA, 32, 3, 1);
+  r("#ffffff", 13 + offB, 32, 3, 1);
+  // túnica com contorno, sombra e cinto com fivela da Pedra
+  r(ink, 1, 13, 22, 15);
+  r(tunic, 2, 14, 20, 13);
+  r(c.tunicDark, 2, 24, 20, 3);
   if (hero === "luna") {
-    g.fillStyle = "#ffd84a";
-    g.fillRect(f > 0 ? x + 4 : x + 15, y - 2, 5, 3);
+    r(tunic, 1, 23, 22, 4);
+    r(c.tunicDark, 1, 26, 22, 2);
   }
-  g.fillStyle = "#1f1a14";
+  r("#5a3a1e", 2, 21, 20, 3);
+  r(ink, 9, 20, 7, 5);
+  r("#37d7f5", 10, 21, 5, 3);
+  r("#c9f9ff", 11, 21, 2, 1);
+  // braço e mão
+  const armY = o.air ? 11 : 15 + (o.running ? [0, -2, 0, 2][step]! : 0);
+  r(ink, f > 0 ? 20 : -3, armY - 1, 7, 12);
+  r(tunic, f > 0 ? 21 : -2, armY, 5, 9);
+  r(c.hand, f > 0 ? 21 : -2, armY + 9, 5, 4);
+  // cabeça com contorno
+  r(ink, 2, 1, 20, 15);
+  r(c.skin, 3, 2, 18, 13);
+  r(c.skinShade, 3, 12, 18, 3);
+  // olhos grandes e expressivos, olhando para a direção do movimento
   if (o.hurt) {
-    g.fillRect(x + (f > 0 ? 12 : 6), y + 7, 5, 2);
-    g.fillRect(x + (f > 0 ? 6 : 12), y + 7, 3, 2);
+    r(ink, f > 0 ? 12 : 6, 7, 5, 2);
+    r(ink, f > 0 ? 6 : 12, 7, 3, 2);
   } else {
-    g.fillRect(x + (f > 0 ? 13 : 5), y + 6, 3, 4);
-    g.fillRect(x + (f > 0 ? 8 : 10), y + 6, 2, 4);
+    const ex = f > 0 ? 1 : -1;
+    r("#ffffff", 6 + ex, 5, 5, 6);
+    r("#ffffff", 13 + ex, 5, 5, 6);
+    r(ink, 8 + ex, 7, 3, 4);
+    r(ink, 15 + ex, 7, 3, 4);
+    r("#ffffff", 8 + ex, 7, 1, 1);
+    r("#ffffff", 15 + ex, 7, 1, 1);
+    r(ink, 6 + ex, 4, 5, 1);
+    r(ink, 13 + ex, 4, 5, 1);
   }
-  g.fillStyle = c.scarf;
-  g.fillRect(x + 2, y + 13, 20, 4);
+  // boca pequena
+  r("#a8552e", f > 0 ? 12 : 9, 12, 3, 1);
+  // cabelo
+  r(ink, 2, 0, 20, 4);
+  r(c.hair, 3, 0, 18, 4);
+  r(c.hair, f > 0 ? 2 : 17, 2, 5, 7);
   if (hero === "leo") {
-    const scarf = Math.sin(o.frame * 0.25) * 2;
-    g.fillRect(f > 0 ? x - 6 : x + 20, y + 13 + scarf, 8, 4);
+    // topete do Léo
+    r(c.hair, f > 0 ? 15 : 4, -1, 6, 3);
+    r(c.hairDark, 3, 3, 18, 1);
+  } else {
+    // franja e presilha dourada da Luna
+    r(c.hair, 3, 2, 18, 3);
+    r("#ffd84a", f > 0 ? 4 : 16, 1, 4, 3);
+    r("#fff0a8", f > 0 ? 5 : 17, 1, 2, 1);
   }
+  // cachecol com ponta animada
+  r(ink, 2, 13, 20, 5);
+  r(c.scarf, 2, 13, 20, 4);
+  const scarf = Math.round(Math.sin(o.frame * 0.25) * 2);
+  r(ink, f > 0 ? -7 : 20, 12 + scarf, 9, 6);
+  r(c.scarf, f > 0 ? -6 : 20, 13 + scarf, 8, 4);
 }
