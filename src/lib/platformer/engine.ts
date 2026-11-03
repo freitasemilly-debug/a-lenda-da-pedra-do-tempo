@@ -1539,8 +1539,8 @@ export class Game {
 export type Hero = "leo" | "luna";
 
 const HERO_PAL = {
-  leo: { tunic: "#38c46f", tunicDark: "#26a057", legs: "#2f4f9e", boots: "#c4522c", hair: "#3a2a18", scarf: "#ff5f8d", skin: "#f6cf9c", hand: "#f0c08a" },
-  luna: { tunic: "#9b6bff", tunicDark: "#7445e0", legs: "#3a3470", boots: "#e0a23a", hair: "#c2462f", scarf: "#37d7f5", skin: "#f3c79a", hand: "#e8b686" },
+  leo: { tunic: "#38c46f", tunicDark: "#26a057", legs: "#2f4f9e", boots: "#c4522c", hair: "#4a3418", hairDark: "#2e2010", scarf: "#ff5f8d", skin: "#f6cf9c", skinShade: "#e4b57e", hand: "#f0c08a" },
+  luna: { tunic: "#9b6bff", tunicDark: "#7445e0", legs: "#3a3470", boots: "#e0a23a", hair: "#d2543a", hairDark: "#a03a24", scarf: "#37d7f5", skin: "#f3c79a", skinShade: "#ddaa76", hand: "#e8b686" },
 };
 
 export interface HeroPose {
