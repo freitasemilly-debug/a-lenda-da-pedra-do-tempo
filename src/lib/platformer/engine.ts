@@ -467,6 +467,8 @@ export class Game {
   private attackHit = false;
   private shake = 0;
   private rings: { x: number; y: number; r: number; vr: number; life: number; max: number; c: string; w: number }[] = [];
+  private popCoins: { x: number; y: number; vy: number; land: number }[] = [];
+  private bumps: { cx: number; cy: number; t: number }[] = [];
   private sfx = audio;
 
   private level!: Level;
@@ -633,6 +635,8 @@ export class Game {
     this.particles = [];
     this.shots = [];
     this.rings = [];
+    this.popCoins = [];
+    this.bumps = [];
     this.shake = 0;
     this.defeatMsg = 0;
     if (reset) this.fragsGot = 0;
@@ -848,6 +852,17 @@ export class Game {
       const r = this.rings[i]!;
       r.r += r.vr;
       if (--r.life <= 0) this.rings.splice(i, 1);
+    }
+    for (let i = this.bumps.length - 1; i >= 0; i--) if (--this.bumps[i]!.t <= 0) this.bumps.splice(i, 1);
+    // moedas que saltam dos blocos-surpresa: sobem, caem e viram moedas coletáveis
+    for (let i = this.popCoins.length - 1; i >= 0; i--) {
+      const pc = this.popCoins[i]!;
+      pc.vy += 0.55;
+      pc.y += pc.vy;
+      if (pc.vy > 0 && pc.y >= pc.land) {
+        L.coins.push({ x: pc.x, y: pc.land, taken: false, t: 0 });
+        this.popCoins.splice(i, 1);
+      }
     }
     if (this.defeatMsg > 0 && --this.defeatMsg === 0) this.emit();
     if (this.defeatMsg === 150) {
@@ -1321,7 +1336,7 @@ export class Game {
     g.save();
     if (this.shake > 0) g.translate((Math.random() - 0.5) * this.shake, (Math.random() - 0.5) * this.shake * 0.6);
     drawSceneryBackground(g, this.world, cam, this.frame);
-    drawSceneryTerrain(g, this.level, this.world, cam);
+    drawSceneryTerrain(g, this.level, this.world, cam, this.bumps);
     this.drawPickups(cam);
     this.drawCheckpoints(cam);
     this.drawSpikes(cam);
@@ -1338,6 +1353,18 @@ export class Game {
 
   private drawPickups(cam: number) {
     const g = this.ctx;
+    // moedas saltando dos blocos-surpresa
+    for (const pc of this.popCoins) {
+      const x = pc.x - cam;
+      const wobble = Math.abs(Math.cos(pc.y * 0.12));
+      const w = 5 + wobble * 11;
+      g.fillStyle = "#ffcf3d";
+      g.fillRect(x - w / 2, pc.y - 10, w, 20);
+      g.fillStyle = "#fff0a8";
+      g.fillRect(x - w / 2 + 2, pc.y - 7, Math.max(2, w - 8), 14);
+      g.fillStyle = "#e09b1c";
+      g.fillRect(x - w / 2, pc.y + 7, w, 3);
+    }
     for (const c of this.level.coins) {
       if (c.taken) continue;
       const x = c.x - cam;
