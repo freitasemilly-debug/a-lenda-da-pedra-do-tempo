@@ -4,11 +4,12 @@ interface SceneryLevel {
   cols: number;
 }
 interface SceneryMover { x: number; y: number; w: number; h: number }
+interface SceneryBump { cx: number; cy: number; t: number }
 const TILE = 32;
 const WIDTH = 960;
 const HEIGHT = 544;
 const ROWS = 17;
-const roles = ["sky", "horizon", "distant", "far", "mid", "near", "shade", "soil", "strata", "rock", "edge", "cap", "leaf", "light", "glow", "flower", "mortar", "metal"] as const;
+const roles = ["sky", "horizon", "distant", "far", "mid", "near", "shade", "soil", "strata", "rock", "edge", "cap", "leaf", "light", "glow", "flower", "mortar", "metal", "water", "wood", "wooddark", "bush", "petal"] as const;
 type Palette = Record<(typeof roles)[number], string>;
 const palettes = new Map<number, Palette>();
 
@@ -61,6 +62,70 @@ function canopy(g: CanvasRenderingContext2D, p: Palette, x: number, y: number, s
   }
   g.globalAlpha = 1;
 }
+function bush(g: CanvasRenderingContext2D, p: Palette, x: number, y: number, size: number, withFlowers: boolean) {
+  block(g, p.bush, x - size * .5, y, size, size * .4);
+  block(g, p.bush, x - size * .35, y - size * .18, size * .7, size * .3);
+  block(g, p.leaf, x - size * .42, y + 2, size * .5, 4);
+  g.globalAlpha = .35;
+  block(g, p.light, x - size * .3, y - size * .14, size * .4, 3);
+  g.globalAlpha = 1;
+  if (withFlowers) {
+    for (let i = 0; i < 3; i++) {
+      const fx = x - size * .3 + noise(i, Math.round(x)) * size * .6;
+      block(g, p.petal, fx, y - size * .2 - 2, 4, 4);
+      block(g, p.light, fx + 1, y - size * .2 - 1, 2, 2);
+    }
+  }
+}
+function crate(g: CanvasRenderingContext2D, p: Palette, x: number, y: number, s: number) {
+  block(g, p.wooddark, x, y, s, s);
+  block(g, p.wood, x + 2, y + 2, s - 4, s - 4);
+  block(g, p.wooddark, x + 2, y + 2, s - 4, 2);
+  block(g, p.wooddark, x + 2, y + s - 4, s - 4, 2);
+  block(g, p.wooddark, x + 2, y + 2, 2, s - 4);
+  block(g, p.wooddark, x + s - 4, y + 2, 2, s - 4);
+  g.strokeStyle = p.wooddark;
+  g.lineWidth = 2;
+  g.beginPath();
+  g.moveTo(x + 3, y + 3);
+  g.lineTo(x + s - 3, y + s - 3);
+  g.moveTo(x + s - 3, y + 3);
+  g.lineTo(x + 3, y + s - 3);
+  g.stroke();
+}
+/** Ilha flutuante decorativa em plano de fundo — nunca é plataforma de verdade. */
+function floatingIsland(g: CanvasRenderingContext2D, p: Palette, world: number, x: number, y: number, s: number, frame: number, id: number) {
+  const bob = Math.sin(frame * .01 + id * 2) * 4;
+  y += bob;
+  g.globalAlpha = .92;
+  // topo verde/pedra e base pontiaguda
+  if (world === 1) {
+    block(g, p.cap, x - s / 2, y, s, 8);
+    block(g, p.soil, x - s / 2 + 3, y + 8, s - 6, 10);
+    polygon(g, p.strata, [[x - s / 2 + 6, y + 18], [x + s / 2 - 6, y + 18], [x, y + 34]]);
+    block(g, p.light, x - s / 2 + 4, y + 1, s * .4, 2);
+    // arvorezinha
+    block(g, p.wooddark, x - 2, y - 14, 5, 14);
+    canopy(g, p, x, y - 26, 30, p.leaf);
+    if (id % 2 === 0) bush(g, p, x + s * .28, y - 4, 18, true);
+  } else if (world === 2) {
+    block(g, p.rock, x - s / 2, y, s, 8);
+    block(g, p.strata, x - s / 2 + 3, y + 8, s - 6, 10);
+    polygon(g, p.mid, [[x - s / 2 + 6, y + 18], [x + s / 2 - 6, y + 18], [x, y + 36]]);
+    crystal(g, p, x - 6, y, 22, 10);
+    crystal(g, p, x + 10, y, 14, 8);
+  } else {
+    block(g, p.rock, x - s / 2, y, s, 8);
+    block(g, p.mortar, x - s / 2, y + 4, s, 2);
+    block(g, p.strata, x - s / 2 + 3, y + 8, s - 6, 10);
+    polygon(g, p.shade, [[x - s / 2 + 6, y + 18], [x + s / 2 - 6, y + 18], [x, y + 34]]);
+    // estandarte pendurado
+    block(g, p.metal, x - 1, y - 18, 2, 18);
+    block(g, p.flower, x - 8, y - 18, 16, 12);
+    block(g, p.glow, x - 2, y - 15, 4, 6);
+  }
+  g.globalAlpha = 1;
+}
 
 export function drawSceneryBackground(g: CanvasRenderingContext2D, world: number, cam: number, frame: number) {
   const p = palette(world);
@@ -73,6 +138,13 @@ export function drawSceneryBackground(g: CanvasRenderingContext2D, world: number
   if (world === 1) forest(g, p, cam, frame);
   else if (world === 2) cavern(g, p, cam, frame);
   else castle(g, p, cam, frame);
+  // Ilhas flutuantes em plano distante, atrás de qualquer objeto jogável.
+  for (let i = -1; i < 5; i++) {
+    const id = i + Math.floor(cam * .45 / 430);
+    const x = i * 430 - cam * .45 % 430 + noise(id, 77) * 120;
+    const y = 96 + noise(id, 78) * 130;
+    floatingIsland(g, p, world, x, y, 64 + noise(id, 79) * 30, frame, id);
+  }
   // Richer world-specific details stay on background planes, behind the path.
   for (let i = -1; i < 7; i++) {
     const x = i * 180 - cam * .32 % 180;
@@ -112,6 +184,16 @@ export function drawSceneryBackground(g: CanvasRenderingContext2D, world: number
 }
 
 function forest(g: CanvasRenderingContext2D, p: Palette, cam: number, frame: number) {
+  // Montanhas com picos claros ao fundo, antes das colinas.
+  for (let i = -1; i < 5; i++) {
+    const id = i + Math.floor(cam * .06 / 380);
+    const x = i * 380 - cam * .06 % 380;
+    const h = 150 + noise(id, 31) * 90;
+    g.globalAlpha = .5;
+    polygon(g, p.distant, [[x, 330], [x + 120, 330 - h], [x + 240, 330]]);
+    polygon(g, p.light, [[x + 96, 330 - h + 26], [x + 120, 330 - h], [x + 144, 330 - h + 26], [x + 132, 330 - h + 34], [x + 120, 330 - h + 26], [x + 108, 330 - h + 34]]);
+    g.globalAlpha = 1;
+  }
   // Daylight and clouds, with stepped silhouettes rather than smooth vector blobs.
   g.globalAlpha = .45;
   block(g, p.light, 760 - (cam * .06) % 120, 42, 48, 48);
@@ -122,6 +204,21 @@ function forest(g: CanvasRenderingContext2D, p: Palette, cam: number, frame: num
     block(g, p.light, x, y + 12, 112, 12);
     block(g, p.light, x + 16, y, 48, 16);
     block(g, p.light, x + 56, y + 5, 36, 12);
+    // sombra da nuvem
+    g.globalAlpha = .25;
+    block(g, p.glow, x + 6, y + 24, 100, 6);
+    g.globalAlpha = .7;
+  }
+  g.globalAlpha = 1;
+  // passarinhos distantes
+  g.globalAlpha = .55;
+  for (let i = 0; i < 4; i++) {
+    const bx = ((i * 300 + frame * .4 - cam * .12) % 1200 + 1200) % 1200 - 120;
+    const by = 60 + noise(i, 12) * 90 + Math.sin(frame * .05 + i) * 6;
+    const flap = Math.sin(frame * .2 + i * 2) > 0 ? 3 : 0;
+    block(g, p.near, bx, by, 5, 2);
+    block(g, p.near, bx + 5, by - flap, 3, 2);
+    block(g, p.near, bx - 3, by - flap, 3, 2);
   }
   g.globalAlpha = 1;
   for (let layer = 0; layer < 2; layer++) {
@@ -152,6 +249,11 @@ function forest(g: CanvasRenderingContext2D, p: Palette, cam: number, frame: num
       if (layer) {
         block(g, p.mid, x + 5, y + 60, 4, HEIGHT - y - 70);
         for (let k = 0; k < 6; k++) block(g, p.shade, x + 10, y + 100 + k * 47, 9, 3);
+        // vinhas penduradas
+        if (id % 2 === 0) {
+          block(g, p.leaf, x + trunk + 8, y + 78, 3, 34);
+          block(g, p.leaf, x + trunk + 9, y + 108, 5, 5);
+        }
       }
       canopy(g, p, x + 10, y - 28, layer ? 134 : 92, layer ? p.leaf : p.mid);
     }
@@ -161,9 +263,11 @@ function forest(g: CanvasRenderingContext2D, p: Palette, cam: number, frame: num
   polygon(g, p.light, [[205, 0], [226, 0], [405, HEIGHT], [301, HEIGHT]]);
   polygon(g, p.light, [[683, 0], [697, 0], [849, HEIGHT], [783, HEIGHT]]);
   g.globalAlpha = 1;
+  // arbustos e flores no plano frontal do fundo
   for (let i = -1; i < 10; i++) {
     const x = i * 128 - cam * .65 % 128;
     canopy(g, p, x, 386 + Math.sin(i * 2 + frame * .002) * 2, 76, p.near);
+    if (i % 2 === 0) bush(g, p, x + 60, 452, 44, true);
   }
 }
 
@@ -193,17 +297,46 @@ function cavern(g: CanvasRenderingContext2D, p: Palette, cam: number, frame: num
     block(g, p.light, x, 407 + i % 5 * 18, 20 + i % 4 * 10, 2);
   }
   g.globalAlpha = 1;
+  // andaimes de madeira e caixas de mineração no plano médio
+  for (let i = -1; i < 6; i++) {
+    const id = i + Math.floor(cam * .5 / 300);
+    const x = i * 300 - cam * .5 % 300 + noise(id, 55) * 60;
+    g.globalAlpha = .8;
+    block(g, p.wooddark, x, 300, 6, 160);
+    block(g, p.wooddark, x + 66, 300, 6, 160);
+    block(g, p.wood, x - 6, 296, 84, 8);
+    block(g, p.wood, x - 6, 352, 84, 6);
+    g.strokeStyle = p.wooddark;
+    g.lineWidth = 3;
+    g.beginPath(); g.moveTo(x + 3, 304); g.lineTo(x + 69, 352); g.moveTo(x + 69, 304); g.lineTo(x + 3, 352); g.stroke();
+    if (id % 2 === 0) crate(g, p, x + 16, 262, 34);
+    else crate(g, p, x + 24, 318, 30);
+    g.globalAlpha = 1;
+  }
   for (let i = -1; i < 8; i++) {
     const x = i * 175 - cam * .45 % 175;
     const h = 28 + noise(i + Math.floor(cam * .45 / 175), 5) * 50;
     block(g, p.near, x, 0, 177, 20);
     polygon(g, p.near, [[x, 15], [x + 32, h], [x + 46, 24], [x + 85, h * .7], [x + 104, 22], [x + 145, h + 15], [x + 163, 16]]);
     block(g, p.rock, x + 9, 15, 24, 3);
+    // correntes penduradas
+    if (i % 2 === 1) {
+      block(g, p.metal, x + 120, 18, 3, 60 + noise(i, 6) * 40);
+      block(g, p.metal, x + 117, 76 + noise(i, 6) * 40, 9, 6);
+    }
   }
   for (let i = -1; i < 7; i++) {
     const x = i * 192 - cam * .57 % 192;
     polygon(g, p.near, [[x, HEIGHT], [x + 10, 416], [x + 33, 375], [x + 57, 416], [x + 86, HEIGHT]]);
     crystal(g, p, x + 50, 446, 41, 17);
+    // cogumelos brilhantes decorativos
+    const glow = .5 + Math.sin(frame * .06 + i) * .3;
+    g.globalAlpha = glow;
+    block(g, p.glow, x + 96, 470, 6, 8);
+    block(g, p.light, x + 95, 466, 8, 5);
+    block(g, p.glow, x + 106, 476, 4, 6);
+    block(g, p.light, x + 105, 473, 6, 4);
+    g.globalAlpha = 1;
   }
 }
 
@@ -254,6 +387,22 @@ function castle(g: CanvasRenderingContext2D, p: Palette, cam: number, frame: num
       }
       g.beginPath(); g.moveTo(x + 138, 145); g.lineTo(x + 138 + Math.cos(frame * .002) * 25, 145 + Math.sin(frame * .002) * 25); g.stroke();
       g.globalAlpha = 1;
+      // estandarte real pendurado no arco
+      block(g, p.metal, x + 110, 82, 56, 4);
+      block(g, p.flower, x + 116, 86, 44, 58);
+      polygon(g, p.flower, [[x + 116, 144], [x + 138, 132], [x + 160, 144]]);
+      block(g, p.glow, x + 132, 96, 12, 18);
+      block(g, p.light, x + 135, 99, 6, 12);
+    } else {
+      // candelabro com chamas tremulando
+      block(g, p.metal, x + 126, 96, 4, 40);
+      block(g, p.metal, x + 112, 100, 32, 4);
+      for (const fx of [x + 112, x + 128, x + 140]) {
+        block(g, p.metal, fx, 92, 4, 10);
+        const fl = Math.sin(frame * .18 + fx) * 1.5;
+        block(g, p.flower, fx, 84 + fl, 4, 8);
+        block(g, p.light, fx + 1, 86 + fl, 2, 4);
+      }
     }
     block(g, p.metal, x + 10, 225, 22, 5);
     block(g, p.flower, x + 24, 215, 4, 10);
@@ -261,17 +410,46 @@ function castle(g: CanvasRenderingContext2D, p: Palette, cam: number, frame: num
   }
 }
 
-export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLevel, world: number, cam: number) {
+export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLevel, world: number, cam: number, bumps?: readonly SceneryBump[]) {
   const p = palette(world);
   const tile = (x: number, y: number) => x < 0 || x >= level.cols || y < 0 || y >= ROWS ? 0 : level.grid[y * level.cols + x] ?? 0;
   const start = Math.max(0, Math.floor(cam / TILE) - 1);
   const end = Math.min(level.cols, start + WIDTH / TILE + 3);
   g.save();
+  // Água no fundo dos vãos e restos de ponte de madeira: decoração atrás do terreno.
+  for (let cx = start; cx < end; cx++) {
+    let pit = true;
+    for (let cy = 11; cy < ROWS; cy++) if (tile(cx, cy)) { pit = false; break; }
+    if (!pit) continue;
+    const x = cx * TILE - cam;
+    block(g, p.water, x, 500, TILE, HEIGHT - 500);
+    g.globalAlpha = .5;
+    for (let k = 0; k < 3; k++) {
+      const shimmer = Math.sin((cx * 3 + k) * 1.7) * 4;
+      block(g, p.light, x + 4 + ((k * 11 + cx * 7) % 20), 508 + k * 12 + shimmer, 12, 2);
+    }
+    g.globalAlpha = 1;
+    const leftBank = tile(cx - 1, 11) || tile(cx - 1, 12) || tile(cx - 1, 13);
+    const rightBank = tile(cx + 1, 11) || tile(cx + 1, 12) || tile(cx + 1, 13);
+    if (leftBank || rightBank) {
+      // espuma na margem
+      block(g, p.light, x, 498, TILE, 3);
+    }
+    // tábuas quebradas de uma ponte antiga, abaixo do caminho
+    if (tile(cx - 1, 11) || (!tile(cx - 1, 11) && !tile(cx - 1, 12) && !tile(cx - 1, 13) && noise(cx, 91) > .3)) {
+      const sag = Math.sin(cx * 2.3) * 3;
+      block(g, p.wooddark, x + 2, 468 + sag, 28, 5);
+      block(g, p.wood, x + 2, 468 + sag, 28, 3);
+      if (noise(cx, 92) > .6) block(g, p.wooddark, x + 12, 473 + sag, 4, 22);
+    }
+  }
   for (let cx = start; cx < end; cx++) for (let cy = 0; cy < ROWS; cy++) {
     const t = tile(cx, cy);
     if (!t) continue;
     const x = cx * TILE - cam;
-    const y = cy * TILE;
+    let y = cy * TILE;
+    // solavanco do bloco-surpresa: só desloca o desenho, nunca a colisão
+    if (bumps) for (const b of bumps) if (b.cx === cx && b.cy === cy) { y -= Math.sin((b.t / 12) * Math.PI) * 6; break; }
     const n = noise(cx, cy);
     if (t === 1) {
       block(g, p.soil, x, y, TILE, TILE);
@@ -312,16 +490,28 @@ export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLe
           }
           if (n > .78) {
             block(g, p.leaf, x + 23, y - 6, 2, 6);
-            block(g, p.flower, x + 21, y - 8, 5, 3);
+            block(g, p.petal, x + 21, y - 8, 5, 3);
             block(g, p.light, x + 23, y - 8, 1, 1);
           }
           if (cy + 1 < ROWS && tile(cx, cy + 1)) {
             block(g, p.edge, x + 10, y + 11, 2, 8);
             block(g, p.edge, x + 12, y + 17, 5, 2);
           }
+        } else if (world === 2) {
+          block(g, p.rock, x + 4, y + 7, 10, 2);
+          block(g, p.strata, x + 24, y + 8, 3, 5);
+          if (n > .7) {
+            block(g, p.glow, x + 8, y - 4, 3, 4);
+            block(g, p.light, x + 9, y - 5, 1, 1);
+          }
         } else {
           block(g, p.rock, x + 4, y + 7, 10, 2);
           block(g, p.strata, x + 24, y + 8, 3, 5);
+          // musgo luminoso nas bordas do castelo
+          if (n > .72) {
+            block(g, p.leaf, x + 6, y + 5, 8, 2);
+            block(g, p.leaf, x + 20, y + 5, 5, 2);
+          }
         }
       }
       if (!tile(cx - 1, cy)) block(g, p.rock, x, y + 5, 2, 27);
@@ -346,10 +536,28 @@ export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLe
       block(g, p.flower, x + 2, y + 2, TILE - 4, TILE - 4);
       block(g, p.light, x + 4, y + 4, TILE - 8, 4);
       block(g, p.soil, x + 4, y + 26, TILE - 8, 3);
-      block(g, p.light, x + 13, y + 7, 6, 4);
-      block(g, p.light, x + 17, y + 11, 5, 7);
-      block(g, p.light, x + 13, y + 18, 6, 4);
-      block(g, p.light, x + 13, y + 24, 5, 3);
+      // "?" em relevo
+      block(g, p.soil, x + 12, y + 7, 8, 4);
+      block(g, p.soil, x + 18, y + 10, 4, 5);
+      block(g, p.soil, x + 13, y + 14, 6, 4);
+      block(g, p.soil, x + 13, y + 18, 4, 3);
+      block(g, p.soil, x + 13, y + 23, 5, 4);
+      block(g, p.light, x + 13, y + 8, 3, 2);
+      // cantos rebitados
+      block(g, p.soil, x + 4, y + 4, 3, 3);
+      block(g, p.soil, x + 25, y + 4, 3, 3);
+      block(g, p.soil, x + 4, y + 25, 3, 3);
+      block(g, p.soil, x + 25, y + 25, 3, 3);
+    } else if (t === 5) {
+      // Bloco usado: aparência gasta, sem símbolo; colisão idêntica à de antes.
+      block(g, p.shade, x, y, TILE, TILE);
+      block(g, p.mortar, x + 2, y + 2, TILE - 4, TILE - 4);
+      block(g, p.rock, x + 4, y + 4, TILE - 8, 3);
+      block(g, p.strata, x + 4, y + 25, TILE - 8, 3);
+      block(g, p.shade, x + 5, y + 5, 3, 3);
+      block(g, p.shade, x + 24, y + 5, 3, 3);
+      block(g, p.shade, x + 5, y + 24, 3, 3);
+      block(g, p.shade, x + 24, y + 24, 3, 3);
     } else {
       // The original floating tile is painted 14px tall; its collider is unchanged.
       block(g, p.edge, x, y, TILE, 14);
@@ -373,14 +581,17 @@ export function drawSceneryMovers(g: CanvasRenderingContext2D, movers: readonly 
   for (const m of movers) {
     const x = m.x - cam;
     if (x < -140 || x > WIDTH + 140) continue;
-    block(g, p.metal, x, m.y, m.w, m.h);
+    // plataforma móvel de madeira com cordas e brilho da Pedra
+    block(g, p.wooddark, x, m.y, m.w, m.h);
+    block(g, p.wood, x + 1, m.y + 1, m.w - 2, m.h - 5);
     block(g, p.cap, x, m.y, m.w, 3);
     block(g, p.light, x + 2, m.y, m.w - 4, 1);
-    block(g, p.soil, x + 3, m.y + 5, m.w - 6, 6);
     block(g, p.shade, x, m.y + m.h - 3, m.w, 3);
-    for (let k = 6; k < m.w - 6; k += 16) block(g, p.rock, x + k, m.y + 6, 2, 3);
-    block(g, p.glow, x + m.w / 2 - 3, m.y + 5, 6, 6);
-    block(g, p.light, x + m.w / 2 - 1, m.y + 6, 2, 3);
+    for (let k = 6; k < m.w - 6; k += 16) block(g, p.wooddark, x + k, m.y + 4, 2, m.h - 8);
+    block(g, p.wooddark, x + 4, m.y - 8, 3, 8);
+    block(g, p.wooddark, x + m.w - 7, m.y - 8, 3, 8);
+    block(g, p.glow, x + m.w / 2 - 3, m.y + 4, 6, 6);
+    block(g, p.light, x + m.w / 2 - 1, m.y + 5, 2, 3);
   }
   g.restore();
 }
