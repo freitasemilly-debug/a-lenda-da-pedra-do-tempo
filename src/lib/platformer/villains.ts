@@ -5,33 +5,59 @@ let colors: Record<string, string> | undefined;
 function palette() {
   if (colors) return colors;
   const css = getComputedStyle(document.documentElement);
-  colors = Object.fromEntries(["enemy-dark", "enemy-red", "enemy-red-light", "enemy-green", "enemy-green-light", "enemy-gold", "enemy-light", "boss-armor", "boss-plate", "boss-cape", "boss-shadow", "opening-cyan"].map(key => [key, css.getPropertyValue(`--${key}`).trim()]));
+  colors = Object.fromEntries(["enemy-dark", "enemy-red", "enemy-red-light", "enemy-green", "enemy-green-light", "enemy-gold", "enemy-light", "boss-armor", "boss-plate", "boss-cape", "boss-shadow", "opening-cyan", "shroom-cap", "shroom-cap-hi", "shroom-cap-dark", "shroom-spot", "shroom-body", "shroom-body-shade"].map(key => [key, css.getPropertyValue(`--${key}`).trim()]));
   return colors;
 }
+
+/** Cogumelos marrons originais: corpinho redondo, chapéu de cogumelo, olhão bravo e perninhas. */
 export function paintEnemy(g: CanvasRenderingContext2D, e: EnemyView, cam: number) {
   const c = palette();
   const x = Math.round(e.x - cam), y = Math.round(e.y);
-  const rect = (role: string, a: number, b: number, w: number, h: number) => { g.fillStyle = c[role] ?? "transparent"; g.fillRect(x+a,y+b,w,h); };
+  const rect = (role: string, a: number, b: number, w: number, h: number) => { g.fillStyle = c[role] ?? "transparent"; g.fillRect(x + a, y + b, w, h); };
   g.save();
-  const walk = Math.round(Math.sin(e.t * 2) * 2);
-  const main = e.kind === "sentry" ? "enemy-green" : "enemy-red";
-  const highlight = e.kind === "sentry" ? "enemy-green-light" : "enemy-red-light";
-  // Clock beetle, ember imp and jade sentry: distinct original silhouettes.
-  rect("enemy-dark",3,6,22,22);
-  rect(main,5,8,18,16);
-  rect(highlight,6,8,15,3);
-  if (e.kind === "walker") {
-    rect("enemy-dark",8,2,3,6); rect("enemy-dark",19,2,3,6);
-    rect("enemy-gold",10,12,8,9); rect("enemy-dark",13,14,2,4); rect("enemy-dark",14,17,3,2);
-    rect("enemy-dark",2,25+walk,8,4); rect("enemy-dark",19,25-walk,8,4);
-  } else {
-    rect("enemy-gold",7,12,6,6); rect("enemy-gold",16,12,6,6);
-    rect("enemy-dark",10+(e.vx>0?1:0),13,2,4); rect("enemy-dark",18+(e.vx>0?1:0),13,2,4);
-    rect("enemy-dark",6,10,7,2); rect("enemy-dark",16,10,7,2);
-    rect("enemy-dark",9,21,12,3); rect("enemy-light",11,21,3,2); rect("enemy-light",17,21,3,2);
-    if (e.kind === "chaser") { rect("enemy-gold",3,2,4,6); rect("enemy-gold",21,2,4,6); }
-    else { rect("enemy-green-light",12,1,4,6); rect("enemy-dark",1,18,4,8); rect("enemy-dark",24,18,4,8); }
-    rect("enemy-dark",5,26+walk,7,4); rect("enemy-dark",17,26-walk,7,4);
+  const walk = e.kind === "sentry" ? 0 : Math.round(Math.sin(e.t * 2.4) * 2);
+  const dir = e.vx > 0 ? 1 : e.vx < 0 ? -1 : 0;
+  const cap = e.kind === "chaser" ? "shroom-cap-dark" : e.kind === "sentry" ? "enemy-gold" : "shroom-cap";
+  // perninhas alternando no passo
+  rect("enemy-dark", 5, 24 + walk, 7, 4);
+  rect("enemy-dark", 16, 24 - walk, 7, 4);
+  // corpinho arredondado com contorno
+  rect("enemy-dark", 6, 12, 16, 13);
+  rect("shroom-body", 7, 13, 14, 11);
+  rect("shroom-body-shade", 7, 21, 14, 3);
+  // olhões bravos, acompanhando a direção da caminhada
+  rect("enemy-light", 8, 15, 5, 5);
+  rect("enemy-light", 15, 15, 5, 5);
+  rect("enemy-dark", 10 + dir, 17, 2, 3);
+  rect("enemy-dark", 17 + dir, 17, 2, 3);
+  // sobrancelhas em "V" de bravo
+  rect("enemy-dark", 8, 13, 5, 2);
+  rect("enemy-dark", 15, 13, 5, 2);
+  rect("enemy-dark", 12, 14, 2, 1);
+  rect("enemy-dark", 14, 14, 2, 1);
+  // boquinha emburrada
+  rect("enemy-dark", 12, 22, 4, 1);
+  // chapéu de cogumelo marrom com aba e pintas claras
+  rect("enemy-dark", 5, 1, 18, 4);
+  rect("enemy-dark", 3, 4, 22, 6);
+  rect("enemy-dark", 1, 9, 26, 4);
+  rect(cap, 6, 2, 16, 3);
+  rect(cap, 4, 5, 20, 5);
+  rect(cap, 2, 10, 24, 3);
+  rect("shroom-cap-hi", 7, 3, 7, 2);
+  rect("shroom-spot", 8, 6, 3, 3);
+  rect("shroom-spot", 17, 5, 4, 3);
+  rect("shroom-spot", 13, 9, 3, 2);
+  // sinais próprios de cada tipo
+  if (e.kind === "chaser") {
+    // chifrudinho de bravo e passo mais largo
+    rect("enemy-dark", 4, -1, 4, 3);
+    rect("enemy-dark", 20, -1, 4, 3);
+  } else if (e.kind === "sentry") {
+    // sentinela dourado: cristalzinho no topo e base mais firme
+    rect("opening-cyan", 12, -3, 4, 4);
+    rect("enemy-light", 13, -2, 2, 2);
+    rect("enemy-dark", 4, 24, 20, 3);
   }
   g.restore();
 }
