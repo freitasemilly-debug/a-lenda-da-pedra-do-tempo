@@ -197,7 +197,7 @@ export function GameScreen() {
       </div>
 
       {/* Tela */}
-      <div className="relative overflow-hidden rounded-2xl border-4 border-border bg-card shadow-[var(--shadow-screen)]">
+      <div className="game-viewport relative overflow-hidden rounded-2xl border-4 border-border bg-card shadow-[var(--shadow-screen)]">
         <canvas
           ref={canvasRef}
           width={VW}
@@ -411,7 +411,7 @@ export function GameScreen() {
       </div>
 
       {/* Controles de toque */}
-      <div className="mt-4 flex items-center justify-between gap-4 md:hidden">
+      <div className="game-touch-controls mt-4 flex items-center justify-between gap-4 md:hidden">
         <div className="flex gap-3">
           <TouchBtn {...hold("left")}>◀</TouchBtn>
           <TouchBtn {...hold("right")}>▶</TouchBtn>

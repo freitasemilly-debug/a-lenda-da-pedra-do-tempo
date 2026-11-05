@@ -1,7 +1,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { buildLevel, Game, TILE, ROWS } from "./engine";
+import { buildLevel, Game, TILE, ROWS, USED } from "./engine";
 import baseline from "./simulation-baseline.json";
 import { drawSceneryBackground, drawSceneryTerrain, drawSceneryMovers } from "./scenery";
 import { paintEnemy, paintBoss } from "./villains";
@@ -40,32 +40,36 @@ describe("Scenery preserves the existing game", () => {
       const previous = previousQuestions[world - 1] ?? [];
       assert.deepEqual(positions, previous.map(i => i - level.cols).sort((a,b) => a-b));
       for (const i of positions) level.grid[i] = 0;
-      assert.equal(hash(JSON.stringify(level)), originalWithoutQuestions[world - 1]);
+      const { bridges: _bridges, ...original } = level;
+      assert.equal(hash(JSON.stringify(original)), originalWithoutQuestions[world - 1]);
     });
-    test(`world ${world}: every raised block is reachable and awards its existing coin once`, () => {
+    test(`world ${world}: every raised block is reachable and releases one collectible coin`, () => {
       const level = buildLevel(world);
       for (const [index, tile] of level.grid.entries()) {
         if (tile !== 4) continue;
         const col = index % level.cols, row = Math.floor(index / level.cols);
         assert.ok([1,2,3].includes(level.grid[(row+3)*level.cols+col] ?? 0));
-        const game = new Game(canvas, () => {}) as unknown as Harness & { coinsGot: number; score: number };
+        const game = new Game(canvas, () => {}) as unknown as Harness & { coinsGot: number; score: number; popCoins: unknown[] };
         game.loadWorld(world, true);
         game.p.x = col*TILE+4; game.p.y = (row+1)*TILE+1; game.p.vy = -12.42;
         const groundTop = (row+3)*TILE;
         assert.ok(groundTop - game.p.h - (row+1)*TILE < 100);
         game.p.y -= 2;
         game.collideY(game.p);
-        assert.equal(game.level.grid[index], 2);
-        assert.equal(game.coinsGot, 1);
-        assert.equal(game.score, 100);
+        assert.equal(game.level.grid[index], USED);
+        assert.equal(game.popCoins.length, 1);
+        assert.equal(game.coinsGot, 0);
+        assert.equal(game.score, 0);
         game.p.y = (row+1)*TILE-1; game.p.vy=-1;
         game.collideY(game.p);
-        assert.equal(game.coinsGot, 1);
-        assert.equal(game.score, 100);
+        assert.equal(game.popCoins.length, 1);
+        assert.equal(game.coinsGot, 0);
+        assert.equal(game.score, 0);
       }
     });
     test(`world ${world}: all geometry, items, enemies, movers and exits match the original`, () => {
-      assert.equal(hash(JSON.stringify(buildLevel(world))), fixtures[world - 1]);
+      const { bridges: _bridges, ...original } = buildLevel(world);
+      assert.equal(hash(JSON.stringify(original)), fixtures[world - 1]);
     });
     test(`world ${world}: every exposed surface retains its exact landing height`, () => {
       const game = new Game(canvas, () => {}) as unknown as Harness;

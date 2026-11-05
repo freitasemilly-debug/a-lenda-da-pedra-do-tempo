@@ -12,3 +12,5 @@
 - Gameplay scenery painters live in `src/lib/platformer/scenery.ts`, read semantic CSS palettes, and must never mutate level or simulation data; this keeps visual upgrades independent of collisions and progression.
 - Enemy and boss painters live in `src/lib/platformer/villains.ts` and only read simulation state; decorative size never changes hitboxes or battle rules.
 - Opening and ending screens share `ArcadeTitle` and scoped opening tokens, keeping their styling independent of gameplay and ranking palettes.
+- Opening screens use a dedicated illustrated logo and a decorative canvas companion, separate from ending titles and playable heroes.
+- Bridge spans are derived in `bridges.ts` by the collision owner and passed to the scenery painter; visible deck tops and swept landing surfaces must be identical.

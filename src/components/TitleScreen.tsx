@@ -1,7 +1,8 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { paintHero } from "@/lib/platformer/engine";
 import { Button } from "@/components/ui/button";
-import { ArcadeTitle } from "./ArcadeTitle";
+import { OpeningLogo } from "./OpeningLogo";
+import { OpeningDinosaur } from "./OpeningDinosaur";
 
 function TimeStoneScene() {
   const ref = useRef<HTMLCanvasElement | null>(null);
@@ -52,9 +53,9 @@ function TimeStoneScene() {
 
 export function TitleScreen({ onPlay, onRanking, children, classic = false }: { onPlay: () => void; onRanking: () => void; children?: ReactNode; classic?: boolean }) {
   return <div className={`opening-screen ${classic ? "opening-ranking" : ""}`}>
-    {children != null ? <div className="opening-content">{children}</div> : <div className="opening-menu">
-      <ArcadeTitle className="opening-title">A LENDA DA PEDRA DO TEMPO</ArcadeTitle>
-      <TimeStoneScene />
+    {children != null ? <div className="opening-content">{!classic && <OpeningLogo compact />}{children}{!classic && <OpeningDinosaur className="opening-dinosaur-corner" />}</div> : <div className="opening-menu">
+      <OpeningLogo />
+      <div className="opening-scene-group"><TimeStoneScene /><OpeningDinosaur /></div>
       <nav className="opening-actions" aria-label="Menu principal">
         <Button variant="arcade" size="arcade" onClick={onPlay} autoFocus><span aria-hidden>▶</span> Jogar</Button>
         <Button variant="arcadeSecondary" size="arcade" onClick={onRanking}><span aria-hidden>★</span> Ranking</Button>
