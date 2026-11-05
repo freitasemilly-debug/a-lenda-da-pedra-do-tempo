@@ -2,6 +2,7 @@
 interface SceneryLevel {
   grid: Uint8Array;
   cols: number;
+  bridges?: readonly { x: number; y: number; w: number; h: number }[];
 }
 interface SceneryMover { x: number; y: number; w: number; h: number }
 interface SceneryBump { cx: number; cy: number; t: number }
@@ -435,13 +436,16 @@ export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLe
       // espuma na margem
       block(g, p.light, x, 498, TILE, 3);
     }
-    // tábuas quebradas de uma ponte antiga, abaixo do caminho
-    if (tile(cx - 1, 11) || (!tile(cx - 1, 11) && !tile(cx - 1, 12) && !tile(cx - 1, 13) && noise(cx, 91) > .3)) {
-      const sag = Math.sin(cx * 2.3) * 3;
-      block(g, p.wooddark, x + 2, 468 + sag, 28, 5);
-      block(g, p.wood, x + 2, 468 + sag, 28, 3);
-      if (noise(cx, 92) > .6) block(g, p.wooddark, x + 12, 473 + sag, 4, 22);
-    }
+  }
+  // Solid decks are supplied by the collision owner, not invented by the painter.
+  for (const b of level.bridges ?? []) {
+    const x = b.x - cam;
+    if (x + b.w < 0 || x > WIDTH) continue;
+    block(g, p.wooddark, x, b.y, b.w, b.h);
+    block(g, p.wood, x, b.y, b.w, 6);
+    block(g, p.light, x, b.y, b.w, 1);
+    for (let dx = 14; dx < b.w; dx += 16) block(g, p.wooddark, x + dx, b.y + 1, 2, 5);
+    for (const dx of [2, b.w - 5]) block(g, p.wooddark, x + dx, b.y + b.h, 3, 26);
   }
   for (let cx = start; cx < end; cx++) for (let cy = 0; cy < ROWS; cy++) {
     const t = tile(cx, cy);
