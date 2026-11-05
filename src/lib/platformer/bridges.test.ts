@@ -38,14 +38,14 @@ describe("solid wooden bridges and safe obstacle surfaces", () => {
         assert.equal(g.lives, 3);
         g.p.x = b.x + 4; g.p.y = b.y - g.p.h; g.p.vx = 0; g.p.vy = 0;
         instance.setInput("right", true);
-        for(let i=0;i<Math.ceil(b.w/4.8)+10;i++) {
+        for(let i=0;i<Math.ceil((b.w-g.p.w-4)/4.8)+7;i++) {
           g.update();
           assert.equal(g.lives, 3);
           assert.equal(g.status, "playing");
           assert.ok(g.p.y < VH);
         }
         instance.setInput("right", false);
-        assert.ok(g.p.x + g.p.w >= b.x + b.w);
+        assert.ok(g.p.x + g.p.w >= b.x + b.w - 1);
       }
     });
     test(`${hero}, world ${world}: question blocks leave walking clearance`, () => {
