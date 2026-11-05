@@ -1,7 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { paintHero } from "@/lib/platformer/engine";
 import { Button } from "@/components/ui/button";
-import { ArcadeTitle } from "./ArcadeTitle";
 import { OpeningLogo } from "./OpeningLogo";
 import { OpeningDinosaur } from "./OpeningDinosaur";
 
