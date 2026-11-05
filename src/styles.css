@@ -387,7 +387,9 @@
 .opening-scene-group .opening-scene { width: 82%; }
 .opening-dinosaur { width: 70px; height: auto; aspect-ratio: 12 / 11; image-rendering: pixelated; flex-shrink: 0; pointer-events: none; }
 .opening-dinosaur-corner { position: absolute; bottom: 6px; right: 8px; width: 55px; }
-.opening-content { height: 100%; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: safe center; padding: 22px; text-align: center; }
+.opening-content { height: 100%; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 22px; text-align: center; }
+.opening-content > :not(.opening-dinosaur) { flex-shrink: 0; }
+.game-viewport:has(.opening-screen:not(.opening-ranking):not(.ending-screen)) { min-height: 500px; }
 .opening-scene { width: min(480px, 75%); height: auto; aspect-ratio: 8 / 3; image-rendering: pixelated; flex-shrink: 0; }
 .opening-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; padding-bottom: 8px; }
 .arcade-title { font-family: var(--font-sans); font-weight: 900; font-size: 46px; line-height: 1.16; letter-spacing: 0; margin: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.1em 0.28em; isolation: isolate; }
@@ -434,6 +436,10 @@
 .heart-shine { fill: var(--enemy-light); opacity: .7; }
 .boss-hud { background: color-mix(in oklab, var(--enemy-dark) 90%, transparent); border-radius: 6px; padding: 7px; }
 @media (max-width: 639px) {
+  .game-viewport:has(.opening-screen:not(.opening-ranking):not(.ending-screen)) { min-height: 480px; }
+  .game-touch-controls { gap: 8px; }
+  .game-touch-controls > div { gap: 8px; }
+  .game-touch-controls button { padding-left: 14px; padding-right: 14px; }
   .opening-menu { padding: 12px; gap: 12px; }
   .opening-logo { width: min(430px, 90%); max-height: 42%; }
   .opening-logo-compact { width: 150px; max-height: 58px; margin-bottom: 8px; }
