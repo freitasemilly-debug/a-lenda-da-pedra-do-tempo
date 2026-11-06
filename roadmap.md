@@ -1,6 +1,7 @@
-# Ajustes solicitados — A Lenda da Pedra do Tempo
-- [ ] Criar logotipo original com letras irregulares multicoloridas, contorno e sombra pretos.
-- [ ] Adicionar dinossauro verde decorativo às quatro telas iniciais, sem substituir Léo/Luna.
-- [ ] Corrigir colisão em toda a extensão das pontes já desenhadas, sem mudar física ou vidas.
-- [ ] Testar pontes com Léo/Luna, plataformas, obstáculos e passagens dos blocos ?.
-- [ ] Conferir as quatro telas no computador e celular; preservar ranking, chefão, áudio e progressão.
+# Correções pendentes — A Lenda da Pedra do Tempo
+- [ ] Diversificar obstáculos funcionais e caminhos opcionais nos três mundos.
+- [ ] Corrigir pontes recuperáveis e transporte/colisão das plataformas móveis.
+- [ ] Revisar percursos, especialmente mundo 2, preservando itens e progressão.
+- [ ] Reposicionar o mesmo dinossauro nos mapas, fora do menu.
+- [ ] Clarear ranking sem modificar registros ou limpeza.
+- [ ] Testar pontes, obstáculos, percursos Léo/Luna e ranking no computador/celular.
