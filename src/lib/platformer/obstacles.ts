@@ -18,10 +18,10 @@ export function buildObstacles(grid: Uint8Array, cols: number, world: number, re
       : ["trap", "rock", "log", "temporary", "crate"];
   for (let cx = 7; cx < cols - 38; cx++) {
     const row = ground(cx);
-    if (row < 4 || reserved.some(x => Math.abs(x / 32 - cx) < 5)) continue;
-    if (![0, 1, 2, 3, 4].every(dx => ground(cx + dx) === row)) continue;
+    if (row < 4 || reserved.some(x => x / 32 >= cx - 1 && x / 32 <= cx + 4)) continue;
+    if (![0, 1, 2, 3].every(dx => ground(cx + dx) === row)) continue;
     // Do not narrow a corridor or obstruct any existing collectible or enemy.
-    if (![0, 1, 2, 3, 4].every(dx => [1, 2, 3, 4].every(dy => !grid[(row - dy) * cols + cx + dx]))) continue;
+    if (![0, 1, 2, 3].every(dx => [1, 2, 3].every(dy => !grid[(row - dy) * cols + cx + dx]))) continue;
     const kind = kinds[result.length % kinds.length] ?? "crate";
     const x = (cx + 1) * 32, base = row * 32;
     const h = kind === "crate" ? 32 : kind === "log" ? 24 : kind === "trap" ? 18 : 16;
@@ -29,7 +29,7 @@ export function buildObstacles(grid: Uint8Array, cols: number, world: number, re
     result.push({ kind, x, y, w: kind === "crate" ? 32 : kind === "log" ? 40 : 64, h,
       ax: x, ay: y, range: kind === "log" || kind === "rock" ? 32 : 0,
       phase: result.length * 37, dx: 0, dy: 0, timer: 0, hidden: 0 });
-    cx += 12;
+    cx += 8;
   }
   return result;
 }

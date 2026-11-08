@@ -431,9 +431,14 @@ export function buildLevel(world: number): Level {
 
   const bridges = buildBridges(grid, cols);
   const obstacles = buildObstacles(grid, cols, world, [
-    ...coins.map(o => o.x), ...fragments.map(o => o.x), ...enemies.map(o => o.x),
+    ...fragments.map(o => o.x), ...enemies.map(o => o.x),
     ...checkpoints.map(o => o.x), ...spikes.map(o => o.x),
   ]);
+  for (const [i, o] of obstacles.filter(o => o.kind === "temporary" || o.kind === "crate").entries()) {
+    const vert = i % 2 === 0;
+    movers.push({ x: o.x + 32, y: o.ay - 32, w: 64, h: 16, ax: o.x + 32, ay: o.ay - 32,
+      range: 24, speed: .7 + world * .1, t: 0, px: 0, py: 0, vert });
+  }
   // Water below the deck is an environmental hazard, never the bridge's landing surface.
   for (const b of bridges) obstacles.push({ kind: "water", x: b.x, y: b.y + 96, w: b.w, h: 32,
     ax: b.x, ay: b.y + 96, range: 0, phase: 0, dx: 0, dy: 0, timer: 0, hidden: 0 });
