@@ -55,7 +55,7 @@ export function TitleScreen({ onPlay, onRanking, children, classic = false }: { 
   return <div className={`opening-screen ${classic ? "opening-ranking" : ""}`}>
     {children != null ? <div className="opening-content">{!classic && <OpeningLogo compact />}{children}{!classic && <OpeningDinosaur className="opening-dinosaur-corner" />}</div> : <div className="opening-menu">
       <OpeningLogo />
-      <div className="opening-scene-group"><TimeStoneScene /><OpeningDinosaur /></div>
+      <div className="opening-scene-group"><TimeStoneScene /><OpeningDinosaur className="opening-dinosaur-companion" /></div>
       <nav className="opening-actions" aria-label="Menu principal">
         <Button variant="arcade" size="arcade" onClick={onPlay} autoFocus><span aria-hidden>▶</span> Jogar</Button>
         <Button variant="arcadeSecondary" size="arcade" onClick={onRanking}><span aria-hidden>★</span> Ranking</Button>
