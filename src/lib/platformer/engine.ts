@@ -2,7 +2,7 @@ import { audio } from "./audio";
 import { buildObstacles, updateObstacles, solidObstacle, dangerousObstacle, landOnSurface, type Obstacle } from "./obstacles";
 import { buildBridges, type Bridge } from "./bridges";
 import { paintEnemy, paintBoss } from "./villains";
-import { drawSceneryBackground, drawSceneryTerrain, drawSceneryMovers } from "./scenery";
+import { drawSceneryBackground, drawSceneryTerrain, drawSceneryMovers, drawSceneryObstacles } from "./scenery";
 /* A Lenda da Pedra do Tempo — motor de plataforma 2D original (canvas, pixel art procedural) */
 
 export const TILE = 32;
