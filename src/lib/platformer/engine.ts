@@ -1,4 +1,5 @@
 import { audio } from "./audio";
+import { buildObstacles, updateObstacles, solidObstacle, dangerousObstacle, landOnSurface, type Obstacle } from "./obstacles";
 import { buildBridges, type Bridge } from "./bridges";
 import { paintEnemy, paintBoss } from "./villains";
 import { drawSceneryBackground, drawSceneryTerrain, drawSceneryMovers } from "./scenery";
@@ -133,6 +134,7 @@ interface Shot {
 interface Level {
   grid: Uint8Array;
   bridges: Bridge[];
+  obstacles: Obstacle[];
   cols: number;
   coins: Pickup[];
   fragments: Pickup[];
@@ -417,7 +419,8 @@ export function buildLevel(world: number): Level {
       if (clear && (below === GROUND || below === BRICK || below === PLATFORM)) {
         const raisedY = surfaceY - 1;
         const destination = grid[raisedY * cols + cx] ?? EMPTY;
-        const blockY = destination === EMPTY ? raisedY : surfaceY;
+        if (destination !== EMPTY) continue;
+        const blockY = raisedY;
         const sideClear =
           (grid[blockY * cols + cx - 1] ?? EMPTY) === EMPTY && (grid[blockY * cols + cx + 1] ?? EMPTY) === EMPTY;
         if (sideClear) set(cx, blockY, QUESTION);
@@ -426,9 +429,18 @@ export function buildLevel(world: number): Level {
     }
   }
 
+  const bridges = buildBridges(grid, cols);
+  const obstacles = buildObstacles(grid, cols, world, [
+    ...coins.map(o => o.x), ...fragments.map(o => o.x), ...enemies.map(o => o.x),
+    ...checkpoints.map(o => o.x), ...spikes.map(o => o.x),
+  ]);
+  // Water below the deck is an environmental hazard, never the bridge's landing surface.
+  for (const b of bridges) obstacles.push({ kind: "water", x: b.x, y: b.y + 96, w: b.w, h: 32,
+    ax: b.x, ay: b.y + 96, range: 0, phase: 0, dx: 0, dy: 0, timer: 0, hidden: 0 });
   return {
     grid,
-    bridges: buildBridges(grid, cols),
+    bridges,
+    obstacles,
     cols,
     coins,
     fragments,
@@ -702,6 +714,11 @@ export class Game {
     const dir = Math.sign(o.vx);
     if (!dir) return false;
     const edge = dir > 0 ? o.x + o.w : o.x;
+    for (const box of this.level.obstacles) {
+      if (box.kind !== "crate" || o.y + o.h <= box.y || o.y >= box.y + box.h || edge < box.x || edge > box.x + box.w) continue;
+      o.x = dir > 0 ? box.x - o.w - .01 : box.x + box.w + .01;
+      o.vx = 0; return true;
+    }
     for (let y = o.y + 2; y < o.y + o.h - 1; y += 8) {
       if (this.solidAt(edge, y)) {
         const cx = Math.floor(edge / TILE);
@@ -719,7 +736,7 @@ export class Game {
       const foot = o.y + o.h;
       // One-way wooden deck: swept feet stop at its exact visible top, never in the water.
       const previousFoot = foot - o.vy;
-      const bridge = this.level.bridges.find(b => o.x + o.w > b.x && o.x < b.x + b.w && previousFoot <= b.y + b.h && foot >= b.y);
+      const bridge = this.level.bridges.find(b => o.x + o.w > b.x && o.x < b.x + b.w && previousFoot <= b.y + .5 && foot >= b.y);
       if (bridge) {
         o.y = bridge.y - o.h;
         o.vy = 0;
@@ -913,17 +930,16 @@ export class Game {
 
     p.vy = Math.min(p.vy + 0.78, 17);
 
+    const oldFeet = p.y + p.h;
+    const support = p.onGround ? L.movers.find(m => p.x + p.w > m.x && p.x < m.x + m.w && Math.abs(oldFeet - m.y) < .5)
+      ?? L.obstacles.find(o => solidObstacle(o) && p.x + p.w > o.x && p.x < o.x + o.w && Math.abs(oldFeet - o.y) < .5) : undefined;
+    updateObstacles(L.obstacles, this.world);
     // movers
     for (const m of L.movers) {
       m.t += 0.016 * m.speed * 60;
       const prevX = m.x;
       const prevY = m.y;
       const osc = Math.sin(m.t * 0.03);
-      if (m.range > 0) {
-        if (m.h === 16 && m.ax !== undefined) {
-          // horizontal se range grande, vertical se pequeno
-        }
-      }
       const vertical = m.vert ?? m.range <= TILE * 3;
       if (vertical) m.y = m.ay + osc * m.range;
       else m.x = m.ax + osc * m.range;
@@ -931,6 +947,14 @@ export class Game {
       m.py = m.y - prevY;
     }
 
+    if (support && p.vy >= 0) {
+      const carry = "px" in support ? support.px : support.dx;
+      const lift = "py" in support ? support.py : support.dy;
+      const velocity = p.vx;
+      p.x += carry; p.vx = carry; this.collideX(p); p.vx = velocity;
+      p.y += lift;
+    }
+    const previousFeet = p.y + p.h;
     // movimento X
     p.x += p.vx;
     this.collideX(p);
@@ -946,14 +970,14 @@ export class Game {
 
     // plataformas móveis (colisão tipo topo)
     for (const m of L.movers) {
-      const overlapX = p.x + p.w > m.x && p.x < m.x + m.w;
-      const feet = p.y + p.h;
-      if (overlapX && p.vy >= 0 && feet >= m.y && feet <= m.y + m.h + Math.abs(m.py) + 8) {
-        p.y = m.y - p.h;
-        p.vy = 0;
+      if (landOnSurface(p, previousFeet, m, support === m ? m.y : m.y - m.py)) p.onGround = true;
+    }
+    for (const o of L.obstacles) {
+      if (solidObstacle(o) && landOnSurface(p, previousFeet, o, support === o ? o.y : o.y - o.dy)) {
         p.onGround = true;
-        p.x += m.px;
+        if (o.kind === "temporary" && o.timer === 0) o.timer = 150;
       }
+      if (dangerousObstacle(o) && p.x + p.w > o.x && p.x < o.x + o.w && p.y + p.h > o.y && p.y < o.y + o.h) this.hitPlayer();
     }
     if (p.onGround) p.coyote = 7;
 
@@ -1352,6 +1376,7 @@ export class Game {
     this.drawCheckpoints(cam);
     this.drawSpikes(cam);
     drawSceneryMovers(g, this.level.movers, this.world, cam);
+    drawSceneryObstacles(g, this.level.obstacles, this.world, cam);
     this.drawEnemies(cam);
     this.drawBoss(cam);
     this.drawGoal(cam);

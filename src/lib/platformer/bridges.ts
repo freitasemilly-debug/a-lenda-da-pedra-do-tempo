@@ -13,8 +13,12 @@ export function buildBridges(grid: Uint8Array, cols: number): Bridge[] {
     const from = x;
     while (x < cols - 1 && pit(x)) x++;
     if (pit(from - 1) || pit(x)) continue;
-    // Keep the existing wooden deck below the main route, with headroom under suspended tiles.
-    bridges.push({ x: from * tile, y: 468, w: (x - from) * tile, h: 10 });
+    const bankTop = (col: number) => {
+      for (let y = 0; y < rows; y++) if (grid[y * cols + col] === 1) return y * tile;
+      return 416;
+    };
+    // Align the deck with the banks: a safe landing must never become an inescapable pit.
+    bridges.push({ x: from * tile, y: Math.min(bankTop(from - 1), bankTop(x)), w: (x - from) * tile, h: 10 });
   }
   return bridges;
 }
