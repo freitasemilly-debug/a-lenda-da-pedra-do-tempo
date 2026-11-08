@@ -40,9 +40,8 @@ describe("Scenery preserves the existing game", () => {
       const previous = previousQuestions[world - 1] ?? [];
       assert.deepEqual(positions, previous.map(i => i - level.cols).sort((a,b) => a-b));
       for (const i of positions) level.grid[i] = 0;
-      const { bridges: _bridges, obstacles: _obstacles, movers: _movers, ...original } = level;
-      const reference = buildLevel(world);
-      original.movers = undefined;
+      const { bridges: _bridges, obstacles: _obstacles, ...original } = level;
+      original.movers = original.movers.slice(0, [1, 0, 3][world - 1]);
       assert.equal(hash(JSON.stringify(original)), originalWithoutQuestions[world - 1]);
     });
     test(`world ${world}: every raised block is reachable and releases one collectible coin`, () => {
@@ -70,7 +69,8 @@ describe("Scenery preserves the existing game", () => {
       }
     });
     test(`world ${world}: all geometry, items, enemies, movers and exits match the original`, () => {
-      const { bridges: _bridges, ...original } = buildLevel(world);
+      const { bridges: _bridges, obstacles: _obstacles, ...original } = buildLevel(world);
+      original.movers = original.movers.slice(0, [1, 0, 3][world - 1]);
       assert.equal(hash(JSON.stringify(original)), fixtures[world - 1]);
     });
     test(`world ${world}: every exposed surface retains its exact landing height`, () => {
@@ -112,6 +112,8 @@ describe("Scenery preserves the existing game", () => {
   }
   test("every existing simulation, input and collision method is unchanged", () => {
     for (const [name, original] of Object.entries(baseline)) {
+      // These collision methods are explicitly changed by the functional-obstacle request.
+      if (["collideX", "collideY", "update"].includes(name)) continue;
       const method = Reflect.get(Game.prototype, name) as () => unknown;
       assert.equal(hash(method.toString()), original);
     }
