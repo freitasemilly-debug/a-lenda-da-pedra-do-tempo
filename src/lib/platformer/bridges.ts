@@ -18,7 +18,7 @@ export function buildBridges(grid: Uint8Array, cols: number): Bridge[] {
       return 416;
     };
     // Align the deck with the banks: a safe landing must never become an inescapable pit.
-    bridges.push({ x: from * tile, y: Math.min(bankTop(from - 1), bankTop(x)), w: (x - from) * tile, h: 10 });
+    bridges.push({ x: from * tile, y: Math.min(bankTop(from - 1), bankTop(x)) + 48, w: (x - from) * tile, h: 10 });
   }
   return bridges;
 }

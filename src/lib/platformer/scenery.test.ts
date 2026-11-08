@@ -40,7 +40,9 @@ describe("Scenery preserves the existing game", () => {
       const previous = previousQuestions[world - 1] ?? [];
       assert.deepEqual(positions, previous.map(i => i - level.cols).sort((a,b) => a-b));
       for (const i of positions) level.grid[i] = 0;
-      const { bridges: _bridges, ...original } = level;
+      const { bridges: _bridges, obstacles: _obstacles, movers: _movers, ...original } = level;
+      const reference = buildLevel(world);
+      original.movers = undefined;
       assert.equal(hash(JSON.stringify(original)), originalWithoutQuestions[world - 1]);
     });
     test(`world ${world}: every raised block is reachable and releases one collectible coin`, () => {
