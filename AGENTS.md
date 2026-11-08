@@ -14,3 +14,4 @@
 - Opening and ending screens share `ArcadeTitle` and scoped opening tokens, keeping their styling independent of gameplay and ranking palettes.
 - Opening screens use a dedicated illustrated logo and a decorative canvas companion, separate from ending titles and playable heroes.
 - Bridge spans are derived in `bridges.ts` by the collision owner and passed to the scenery painter; visible deck tops and swept landing surfaces must be identical.
+- Environmental obstacles are generated and advanced in `obstacles.ts`; the engine owns interaction and the scenery painter reads their exact state so visual and functional surfaces agree.

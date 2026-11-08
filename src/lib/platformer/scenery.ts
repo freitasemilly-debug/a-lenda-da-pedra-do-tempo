@@ -1,3 +1,4 @@
+import type { Obstacle } from "./obstacles";
 /* Read-only scenery painter. All collision geometry remains owned by engine.ts. */
 interface SceneryLevel {
   grid: Uint8Array;
@@ -596,6 +597,39 @@ export function drawSceneryMovers(g: CanvasRenderingContext2D, movers: readonly 
     block(g, p.wooddark, x + m.w - 7, m.y - 8, 3, 8);
     block(g, p.glow, x + m.w / 2 - 3, m.y + 4, 6, 6);
     block(g, p.light, x + m.w / 2 - 1, m.y + 5, 2, 3);
+  }
+  g.restore();
+}
+
+export function drawSceneryObstacles(g: CanvasRenderingContext2D, obstacles: readonly Obstacle[], world: number, cam: number) {
+  const p = palette(world);
+  g.save();
+  for (const o of obstacles) {
+    const x = o.x - cam;
+    if (x + o.w < 0 || x > WIDTH || o.hidden) continue;
+    if (o.kind === "crate") crate(g, p, x, o.y, o.w);
+    else if (o.kind === "water") {
+      block(g, p.water, x, o.y, o.w, o.h);
+      for (let dx = 0; dx < o.w; dx += 20) block(g, p.light, x + dx, o.y + Math.sin(o.phase * .06 + dx) * 2, 12, 2);
+    } else if (o.kind === "log") {
+      block(g, p.wooddark, x, o.y, o.w, o.h);
+      block(g, p.wood, x + 2, o.y + 2, o.w - 4, o.h - 4);
+      block(g, p.light, x + 4, o.y + 4, o.w - 8, 2);
+      g.strokeStyle = p.wooddark; g.lineWidth = 3;
+      g.beginPath(); g.arc(x + o.w - 9, o.y + o.h / 2, 7, o.phase * .1, o.phase * .1 + Math.PI * 1.5); g.stroke();
+    } else if (o.kind === "trap") {
+      const active = o.phase % 240 >= 120 && o.phase % 240 < 180;
+      block(g, p.metal, x, o.y + o.h - 5, o.w, 5);
+      if (active) for (let dx = 0; dx < o.w; dx += 16) polygon(g, p.flower, [[x + dx, o.y + o.h - 5], [x + dx + 8, o.y], [x + dx + 16, o.y + o.h - 5]]);
+      else block(g, o.phase % 240 > 90 ? p.flower : p.glow, x + 4, o.y + o.h - 8, o.w - 8, 3);
+    } else {
+      if (o.kind === "temporary" && o.timer > 0 && o.timer < 60) g.globalAlpha = o.timer % 12 < 6 ? .4 : 1;
+      block(g, o.kind === "temporary" ? p.glow : p.shade, x, o.y, o.w, o.h);
+      block(g, o.kind === "temporary" ? p.light : p.rock, x + 2, o.y + 2, o.w - 4, o.h - 4);
+      block(g, p.metal, x + 4, o.y + o.h - 4, o.w - 8, 3);
+      if (o.kind === "temporary") for (let dx = 8; dx < o.w; dx += 16) block(g, p.glow, x + dx, o.y + 4, 3, 6);
+      g.globalAlpha = 1;
+    }
   }
   g.restore();
 }

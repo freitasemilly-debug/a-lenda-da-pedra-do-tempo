@@ -323,26 +323,27 @@ export function GameScreen() {
               </div>
             )}
             {overlay === "ranking" && (
-              <div className="flex w-full max-w-md flex-col items-center gap-4">
-                <ScreenTitle kicker="Classificação">RANKING</ScreenTitle>
+              <div className="ranking-content">
+                <ArcadeTitle className="ranking-title">RANKING</ArcadeTitle>
                 {ranking.length === 0 ? (
                   <p className="tpanel text-sm text-foreground">Nenhuma partida registrada ainda.</p>
                 ) : (
-                  <ol className="tpanel max-h-64 w-full overflow-y-auto text-left">
+                  <ol className="ranking-table" aria-label="Classificação dos jogadores">
                     {ranking.slice(0, 20).map((r, i) => (
-                      <li key={`${r.date}-${i}`} className="flex items-center justify-between gap-3 py-1 font-pixel text-[10px] uppercase">
-                        <span className="text-foreground">
-                          <span className="text-title-cyan">{i + 1}º</span> — {r.name}
-                          <span className="ml-2 text-title-stone">({r.hero === "luna" ? "Luna" : "Léo"})</span>
+                      <li key={`${r.date}-${i}`} className={`ranking-row ${i < 3 ? `ranking-podium ranking-place-${i}` : ""}`}>
+                        <span className="ranking-position">{i + 1}º</span>
+                        <span className="ranking-player">
+                          <strong>{r.name}</strong>
+                          <small>{r.hero === "luna" ? "Luna" : "Léo"}</small>
                         </span>
-                        <span className="text-title-cyan">{r.score} pts</span>
+                        <span className="ranking-score">{r.score.toLocaleString("pt-BR")} <small>pts</small></span>
                       </li>
                     ))}
                   </ol>
                 )}
                 {!confirmClearRanking ? (
                   <Button variant="ghost" size="arcade" type="button" onClick={() => setConfirmClearRanking(true)} disabled={ranking.length === 0}
-                    className="rounded-lg border-2 border-rose-400/70 bg-rose-500/15 px-4 py-2 font-pixel text-[9px] uppercase text-rose-200 transition hover:bg-rose-500/30 disabled:cursor-not-allowed disabled:opacity-40">
+                    className="ranking-clear">
                     Limpar ranking
                   </Button>
                 ) : (
