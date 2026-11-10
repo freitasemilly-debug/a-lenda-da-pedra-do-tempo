@@ -438,16 +438,7 @@ export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLe
       block(g, p.light, x, 498, TILE, 3);
     }
   }
-  // Solid decks are supplied by the collision owner, not invented by the painter.
-  for (const b of level.bridges ?? []) {
-    const x = b.x - cam;
-    if (x + b.w < 0 || x > WIDTH) continue;
-    block(g, p.wooddark, x, b.y, b.w, b.h);
-    block(g, p.wood, x, b.y, b.w, 6);
-    block(g, p.light, x, b.y, b.w, 1);
-    for (let dx = 14; dx < b.w; dx += 16) block(g, p.wooddark, x + dx, b.y + 1, 2, 5);
-    for (const dx of [2, b.w - 5]) block(g, p.wooddark, x + dx, b.y + b.h, 3, 26);
-  }
+  
   for (let cx = start; cx < end; cx++) for (let cy = 0; cy < ROWS; cy++) {
     const t = tile(cx, cy);
     if (!t) continue;
