@@ -302,29 +302,7 @@ export function buildLevel(world: number): Level {
       x = px;
       fillGround(x, x + 7, top);
       x += 7;
-    } else if (roll < 0.53) {
-      // plataforma móvel sobre o vazio
-      const gap = 6 + Math.floor(rng() * 3);
-      const vertical = rng() < 0.4;
-      movers.push({
-        x: (x + 1) * TILE,
-        y: (top - 2) * TILE,
-        w: TILE * 3,
-        h: 16,
-        ax: vertical ? (x + Math.floor((gap - 3) / 2)) * TILE : (x + 1) * TILE,
-        ay: (top - 2) * TILE,
-        range: vertical ? TILE * 1.2 : Math.max(1, (gap - 4) / 2) * TILE,
-        vert: vertical,
-        speed: 0.9 + world * 0.15,
-        t: rng() * 6,
-        px: 0,
-        py: 0,
-      });
-      if (!vertical) movers[movers.length - 1]!.ax = (x + 1) * TILE + Math.max(1, (gap - 4) / 2) * TILE;
-      for (let i = 1; i < gap; i += 2) addCoin(x + i, top - 5);
-      x += gap;
-      fillGround(x, x + 6, top);
-      x += 6;
+   
     } else if (roll < 0.63) {
       // espinhos (obstáculo)
       fillGround(x, x + 10, top);
