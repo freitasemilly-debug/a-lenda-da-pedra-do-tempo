@@ -364,6 +364,12 @@
   --enemy-green-light: oklch(0.83 0.1 157);
   --enemy-gold: oklch(0.84 0.16 83);
   --enemy-light: oklch(0.97 0.015 95);
+    --shroom-cap: #8b5a3c;
+  --shroom-cap-hi: #d9a16c;
+  --shroom-cap-dark: #5b382b;
+  --shroom-spot: #f4d7a1;
+  --shroom-body: #e8c7a0;
+  --shroom-body-shade: #b98d68;
   --boss-armor: oklch(0.5 0.16 260);
   --boss-plate: oklch(0.67 0.17 255);
   --boss-cape: oklch(0.55 0.2 20);
