@@ -385,7 +385,13 @@
 .opening-logo-compact { width: 190px; max-height: 76px; margin-bottom: 12px; }
 .opening-scene-group { position: relative; display: flex; align-items: flex-end; justify-content: center; width: min(480px, 85%); flex-shrink: 0; }
 .opening-scene-group .opening-scene { width: 100%; }
-.opening-scene-group .opening-dinosaur-companion { position: absolute; width: 19%; bottom: 4%; left: 32%; }
+.opening-scene-group .opening-dinosaur-companion {
+  position: absolute;
+  width: 14%;
+  bottom: 4%;
+  right: 2%;
+  left: auto;
+}
 .opening-dinosaur { width: 70px; height: auto; aspect-ratio: 12 / 11; image-rendering: pixelated; flex-shrink: 0; pointer-events: none; }
 .opening-dinosaur-corner { position: absolute; bottom: 6px; right: 8px; width: 55px; }
 .ranking-content { width: 100%; max-width: 640px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
