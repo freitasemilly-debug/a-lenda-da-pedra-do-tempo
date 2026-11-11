@@ -1,4 +1,4 @@
-import { audio } from "./audio";
+fimport { audio } from "./audio";
 import { buildObstacles, updateObstacles, solidObstacle, dangerousObstacle, landOnSurface, type Obstacle } from "./obstacles";
 import { buildBridges, type Bridge } from "./bridges";
 import { paintEnemy, paintBoss } from "./villains";
@@ -10,7 +10,7 @@ export const VW = 960;
 export const VH = 544;
 export const ROWS = VH / TILE; // 17
 
-export const EMPTY = 0;
+export const EMPTY = 0;f
 export const GROUND = 1;
 export const BRICK = 2;
 export const PLATFORM = 3;
@@ -406,7 +406,8 @@ export function buildLevel(world: number): Level {
       }
     }
   }
-
+  // Cria um chão contínuo em toda a fase.
+  fillGround(0, cols, 13);
  const bridges: Bridge[] = [];
   const obstacles = buildObstacles(grid, cols, world, [
     ...fragments.map(o => o.x), ...enemies.map(o => o.x),
