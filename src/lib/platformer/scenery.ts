@@ -462,33 +462,6 @@ export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLe
   }
 
 
-  for (let cx = start; cx < end; cx++) {
-    if (!pitColumn(cx)) continue;
-
-    let left = cx - 1;
-    let right = cx + 1;
-
-    while (left >= 0 && !pitColumn(left)) left--;
-    while (right < level.cols && !pitColumn(right)) right++;
-
-    if (left < 0 || right >= level.cols) continue;
-
-    const waterY = Math.min(bankTop(left), bankTop(right)) * TILE;
-    if (waterY >= HEIGHT) continue;
-
-    const x = cx * TILE - cam;
-
-    block(g, p.water, x, waterY, TILE, HEIGHT - waterY);
-
-    g.globalAlpha = 0.5;
-    for (let k = 0; k < 3; k++) {
-      const shimmer = Math.sin((cx * 3 + k) * 1.7) * 3;
-      block(g, p.light, x + 4 + ((k * 11 + cx * 7) % 20), waterY + 8 + k * 12 + shimmer, 12, 2);
-    }
-    g.globalAlpha = 1;
-
-    block(g, p.light, x, waterY, TILE, 3);
-  }
 
   for (let cx = start; cx < end; cx++) for (let cy = 0; cy < ROWS; cy++) {
     const t = tile(cx, cy);
