@@ -418,27 +418,51 @@ export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLe
   const start = Math.max(0, Math.floor(cam / TILE) - 1);
   const end = Math.min(level.cols, start + WIDTH / TILE + 3);
   g.save();
-  // Água no fundo dos vãos e restos de ponte de madeira: decoração atrás do terreno.
+  
+  // Água preenchendo todo o vão, na altura das margens.
+  const pitColumn = (col: number) => {
+    if (col < 0 || col >= level.cols) return false;
+    for (let cy = 11; cy < ROWS; cy++) {
+      if (tile(col, cy)) return false;
+    }
+    return true;
+  };
+
+  const bankTop = (col: number) => {
+    for (let cy = 0; cy < ROWS; cy++) {
+      if (tile(col, cy)) return cy;
+    }
+    return ROWS;
+  };
+
   for (let cx = start; cx < end; cx++) {
-    let pit = true;
-    for (let cy = 11; cy < ROWS; cy++) if (tile(cx, cy)) { pit = false; break; }
-    if (!pit) continue;
+    if (!pitColumn(cx)) continue;
+
+    let left = cx - 1;
+    let right = cx + 1;
+
+    while (left >= 0 && !pitColumn(left)) left--;
+    while (right < level.cols && !pitColumn(right)) right++;
+
+    if (left < 0 || right >= level.cols) continue;
+
+    const waterY = Math.min(bankTop(left), bankTop(right)) * TILE;
+    if (waterY >= HEIGHT) continue;
+
     const x = cx * TILE - cam;
-    block(g, p.water, x, 500, TILE, HEIGHT - 500);
-    g.globalAlpha = .5;
+
+    block(g, p.water, x, waterY, TILE, HEIGHT - waterY);
+
+    g.globalAlpha = 0.5;
     for (let k = 0; k < 3; k++) {
-      const shimmer = Math.sin((cx * 3 + k) * 1.7) * 4;
-      block(g, p.light, x + 4 + ((k * 11 + cx * 7) % 20), 508 + k * 12 + shimmer, 12, 2);
+      const shimmer = Math.sin((cx * 3 + k) * 1.7) * 3;
+      block(g, p.light, x + 4 + ((k * 11 + cx * 7) % 20), waterY + 8 + k * 12 + shimmer, 12, 2);
     }
     g.globalAlpha = 1;
-    const leftBank = tile(cx - 1, 11) || tile(cx - 1, 12) || tile(cx - 1, 13);
-    const rightBank = tile(cx + 1, 11) || tile(cx + 1, 12) || tile(cx + 1, 13);
-    if (leftBank || rightBank) {
-      // espuma na margem
-      block(g, p.light, x, 498, TILE, 3);
-    }
+
+    block(g, p.light, x, waterY, TILE, 3);
   }
-  
+
   for (let cx = start; cx < end; cx++) for (let cy = 0; cy < ROWS; cy++) {
     const t = tile(cx, cy);
     if (!t) continue;
