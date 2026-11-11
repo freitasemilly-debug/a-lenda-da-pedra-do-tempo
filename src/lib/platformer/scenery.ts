@@ -419,21 +419,48 @@ export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLe
   const end = Math.min(level.cols, start + WIDTH / TILE + 3);
   g.save();
   
-  // Água preenchendo todo o vão, na altura das margens.
-  const pitColumn = (col: number) => {
+
+  // Água baixa no fundo de todos os buracos.
+  const isPitColumn = (col: number) => {
     if (col < 0 || col >= level.cols) return false;
-    for (let cy = 11; cy < ROWS; cy++) {
+
+    // Verifica se existe chão na altura da superfície.
+    for (let cy = 7; cy <= 11; cy++) {
       if (tile(col, cy)) return false;
     }
+
     return true;
   };
 
-  const bankTop = (col: number) => {
-    for (let cy = 0; cy < ROWS; cy++) {
-      if (tile(col, cy)) return cy;
+  const waterY = VH - 72;
+
+  for (let cx = start; cx < end; cx++) {
+    if (!isPitColumn(cx)) continue;
+
+    const x = cx * TILE - cam;
+
+    // Água sempre na mesma altura, perto do fundo.
+    block(g, p.water, x, waterY, TILE, VH - waterY);
+
+    g.globalAlpha = 0.5;
+
+    for (let k = 0; k < 2; k++) {
+      const shimmer = Math.sin((cx * 3 + k) * 1.7) * 3;
+
+      block(
+        g,
+        p.light,
+        x + 4 + ((k * 11 + cx * 7) % 20),
+        waterY + 10 + k * 18 + shimmer,
+        12,
+        2
+      );
     }
-    return ROWS;
-  };
+
+    g.globalAlpha = 1;
+    block(g, p.light, x, waterY, TILE, 3);
+  }
+
 
   for (let cx = start; cx < end; cx++) {
     if (!pitColumn(cx)) continue;
