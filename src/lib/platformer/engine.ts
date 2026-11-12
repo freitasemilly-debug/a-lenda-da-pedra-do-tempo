@@ -407,7 +407,7 @@ export function buildLevel(world: number): Level {
     }
   }
  
- const bridges: Bridge[] = [];
+ const bridges: Bridge[] = buildBridges(grid, cols);
   const obstacles = buildObstacles(grid, cols, world, [
     ...fragments.map(o => o.x), ...enemies.map(o => o.x),
     ...checkpoints.map(o => o.x), ...spikes.map(o => o.x),
