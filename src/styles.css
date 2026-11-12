@@ -393,10 +393,9 @@
 .opening-scene-group .opening-scene { width: 100%; }
 .opening-scene-group .opening-dinosaur-companion {
   position: absolute;
-  width: 55%;
-  bottom: 6%;
-  right: 8%;
-  left: auto;
+width: 14%;
+  bottom: 4%;
+  right: 2%;
 }
 .opening-dinosaur { width: 70px; height: auto; aspect-ratio: 12 / 11; image-rendering: pixelated; flex-shrink: 0; pointer-events: none; }
 .opening-dinosaur-corner { position: absolute; bottom: 6px; right: 8px; width: 55px; }
