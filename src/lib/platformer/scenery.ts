@@ -440,8 +440,7 @@ export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLe
     const x = cx * TILE - cam;
 
     // Água sempre na mesma altura, perto do fundo.
-    block(g, p.water, x, waterY, TILE, VH - waterY);
-
+   block(g, p.water, x, waterY, TILE, HEIGHT - waterY);
     g.globalAlpha = 0.5;
 
     for (let k = 0; k < 2; k++) {
