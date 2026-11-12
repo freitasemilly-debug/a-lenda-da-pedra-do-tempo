@@ -420,15 +420,7 @@ export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLe
   g.save();
   
 
-  // Água baixa no fundo de todos os buracos.
-  const isPitColumn = (col: number) => {
-    if (col < 0 || col >= level.cols) return false;
-
-     // Verifica se existe chão na coluna.
-    for (let cy = 11; cy < ROWS; cy++) {
-      if (tile(col, cy)) return false;
-    }
-
+ 
     return true;
   };
 
