@@ -432,7 +432,7 @@ export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLe
     return true;
   };
 
-  const waterY = VH - 72;
+  const waterY = HEIGHT - 72;
 
   for (let cx = start; cx < end; cx++) {
     if (!isPitColumn(cx)) continue;
