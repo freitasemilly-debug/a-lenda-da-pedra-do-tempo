@@ -717,14 +717,7 @@ export class Game {
     let landed = false;
     if (o.vy >= 0) {
       const foot = o.y + o.h;
-      // One-way wooden deck: swept feet stop at its exact visible top, never in the water.
-      const previousFoot = foot - o.vy;
-      const bridge = this.level.bridges.find(b => o.x + o.w > b.x && o.x < b.x + b.w && previousFoot <= b.y + .5 && foot >= b.y);
-      if (bridge) {
-        o.y = bridge.y - o.h;
-        o.vy = 0;
-        return true;
-      }
+      
       for (let x = o.x + 2; x <= o.x + o.w - 2; x += 8) {
         if (this.solidAt(x, foot)) {
           o.y = Math.floor(foot / TILE) * TILE - o.h;
