@@ -424,33 +424,7 @@ export function drawSceneryTerrain(g: CanvasRenderingContext2D, level: SceneryLe
     return true;
   };
 
-  const waterY = HEIGHT - 72;
 
-  for (let cx = start; cx < end; cx++) {
-    if (!isPitColumn(cx)) continue;
-
-    const x = cx * TILE - cam;
-
-    // Água sempre na mesma altura, perto do fundo.
-   block(g, p.water, x, waterY, TILE, HEIGHT - waterY);
-    g.globalAlpha = 0.5;
-
-    for (let k = 0; k < 2; k++) {
-      const shimmer = Math.sin((cx * 3 + k) * 1.7) * 3;
-
-      block(
-        g,
-        p.light,
-        x + 4 + ((k * 11 + cx * 7) % 20),
-        waterY + 10 + k * 18 + shimmer,
-        12,
-        2
-      );
-    }
-
-    g.globalAlpha = 1;
-    block(g, p.light, x, waterY, TILE, 3);
-  }
 
 
 
